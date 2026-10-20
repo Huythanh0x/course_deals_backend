@@ -67,7 +67,7 @@ class CouponCourseController(
         @Valid @RequestBody requestBody: CouponRequestDTO,
         request: HttpServletRequest,
     ): ResponseEntity<String> {
-        courseResponseService.saveNewCouponUrlAsync(requestBody.couponUrl!!, request.remoteAddr)
+        courseResponseService.saveNewCouponUrlAsync(requestBody.couponUrl, request.remoteAddr)
         return ResponseEntity.accepted().body("Coupon submission received and is being processed.")
     }
 

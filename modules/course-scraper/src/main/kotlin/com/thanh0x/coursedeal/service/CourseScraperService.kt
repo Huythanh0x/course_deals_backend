@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
  * Service for handling background scraping of course coupons using JobRunr.
  */
 @Service
+@Suppress("LongParameterList")
 class CourseScraperService(
     private val couponCourseRepository: CouponCourseRepository,
     private val expiredCouponRepository: ExpiredCouponRepository,
@@ -23,6 +24,7 @@ class CourseScraperService(
     private val notificationService: NotificationService,
     private val scrapingTaskLogRepository: ScrapingTaskLogRepository,
     private val jobScheduler: JobScheduler,
+    private val couponCleanupService: CouponCleanupService,
 ) {
     private val log = logger()
 
@@ -66,7 +68,13 @@ class CourseScraperService(
 
             if (couponData == null) {
                 log.warn("Failed to extract valid data for URL: {}", couponUrl)
-                updateAuditLog(auditLog, "FAILED", "Extractor returned null data")
+                val existing = couponCourseRepository.findByCouponUrl(couponUrl)
+                if (existing != null) {
+                    couponCleanupService.archiveAndPurgeSingleCoupon(existing)
+                } else {
+                    couponCleanupService.recordExpiredUrl(couponUrl)
+                }
+                updateAuditLog(auditLog, "FAILED", "Extractor returned null data (expired or invalid coupon)")
                 return
             }
 

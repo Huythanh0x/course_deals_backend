@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import java.time.Instant
 
 /**
  * Service class for handling course response operations.
@@ -55,13 +56,13 @@ class CourseResponseService(
                 !queryDto.category.isBlank() ||
                 !queryDto.language.isBlank()
 
+        val now = Instant.now()
         val page: Page<CouponCourseData> =
             when {
                 hasQuery -> {
-                    couponCourseRepository.findByTitleContainingOrDescriptionContainingOrHeadingContaining(
+                    couponCourseRepository.findByQueryAndActive(
                         queryDto.query,
-                        queryDto.query,
-                        queryDto.query,
+                        now,
                         pageable,
                     )
                 }
@@ -72,11 +73,12 @@ class CourseResponseService(
                         queryDto.level,
                         queryDto.category,
                         queryDto.language,
+                        now,
                         pageable,
                     )
                 }
                 else -> {
-                    couponCourseRepository.findAll(pageable)
+                    couponCourseRepository.findAllActive(now, pageable)
                 }
             }
 
@@ -200,7 +202,8 @@ class CourseResponseService(
      */
     fun getCouponDetail(courseId: String): CouponDetailDTO {
         val couponCourseData = couponCourseRepository.findByCourseId(courseId.toInt())
-        return if (couponCourseData != null) {
+        val isExpired = couponCourseData?.expiredDate?.let { it <= Instant.now() } ?: false
+        return if (couponCourseData != null && !isExpired) {
             couponMapper.toDetailDto(couponCourseData)
         } else {
             throw ResourceNotFoundException("Course id not found: $courseId")
