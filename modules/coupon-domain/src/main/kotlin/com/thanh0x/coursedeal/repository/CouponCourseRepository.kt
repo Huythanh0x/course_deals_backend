@@ -13,17 +13,39 @@ import java.time.Instant
 import java.time.LocalDateTime
 
 @Repository
+@Suppress("TooManyFunctions")
 interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
-    fun findByTitleContainingOrDescriptionContainingOrHeadingContaining(
-        title: String,
-        description: String,
-        heading: String,
+    @Query(
+        """
+        SELECT c FROM CouponCourseData c WHERE 
+        (c.expiredDate IS NULL OR c.expiredDate > :now)
+        """,
+    )
+    fun findAllActive(
+        @Param("now") now: Instant,
         pageable: Pageable,
     ): Page<CouponCourseData>
 
     @Query(
         """
         SELECT c FROM CouponCourseData c WHERE 
+        (c.expiredDate IS NULL OR c.expiredDate > :now) AND (
+            LOWER(c.title) LIKE LOWER(CONCAT('%', :query, '%')) OR 
+            LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%')) OR 
+            LOWER(c.heading) LIKE LOWER(CONCAT('%', :query, '%'))
+        )
+        """,
+    )
+    fun findByQueryAndActive(
+        @Param("query") query: String,
+        @Param("now") now: Instant,
+        pageable: Pageable,
+    ): Page<CouponCourseData>
+
+    @Query(
+        """
+        SELECT c FROM CouponCourseData c WHERE 
+        (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
         c.rating > :rating AND 
         c.contentLength > :contentLength AND 
         c.level LIKE %:level% AND 
@@ -38,8 +60,11 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
         @Param("level") level: String,
         @Param("category") category: String,
         @Param("language") language: String,
+        @Param("now") now: Instant,
         pageable: Pageable,
     ): Page<CouponCourseData>
+
+    fun findByExpiredDateLessThanEqual(expirationThreshold: Instant): List<CouponCourseData>
 
     fun findByCourseId(courseId: Int): CouponCourseData?
 

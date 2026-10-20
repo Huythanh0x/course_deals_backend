@@ -4,6 +4,8 @@ import com.thanh0x.coursedeal.config.CrawlerProperties
 import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.crawlerrunner.crawler.EnextCrawler
 import com.thanh0x.coursedeal.crawlerrunner.crawler.RealDiscountCrawler
+import com.thanh0x.coursedeal.repository.ExpiredCouponRepository
+import com.thanh0x.coursedeal.service.CouponCleanupService
 import com.thanh0x.coursedeal.service.CourseScraperService
 import com.thanh0x.coursedeal.utils.LastFetchTimeManager
 import jakarta.annotation.PreDestroy
@@ -19,6 +21,7 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -29,6 +32,8 @@ import java.util.concurrent.atomic.AtomicLong
 @EnableConfigurationProperties(CrawlerProperties::class)
 class CrawlerRunner(
     private val courseScraperService: CourseScraperService,
+    private val couponCleanupService: CouponCleanupService,
+    private val expiredCouponRepository: ExpiredCouponRepository,
     private val enextCrawler: EnextCrawler,
     private val realDiscountCrawler: RealDiscountCrawler,
     private val properties: CrawlerProperties,
@@ -58,18 +63,43 @@ class CrawlerRunner(
                     startTime.set(System.currentTimeMillis())
 
                     log.info("Starting new crawl round...")
+                    try {
+                        val purged = couponCleanupService.archiveAndPurgeExpiredCoupons()
+                        if (purged > 0) {
+                            log.info("Purged and archived {} expired coupons", purged)
+                        }
+                    } catch (e: Exception) {
+                        log.error("Failed to run expired coupon cleanup", e)
+                    }
+
                     val discoveredUrls = mutableListOf<String>()
                     discoveredUrls.addAll(enextCrawler.getAllCouponUrls())
                     discoveredUrls.addAll(realDiscountCrawler.getAllCouponUrls())
 
                     val uniqueUrls = discoveredUrls.toSet()
-                    log.info("Discovered {} unique URLs. Handing off to background scraper...", uniqueUrls.size)
 
-                    for (url in uniqueUrls) {
+                    val recentlyExpiredUrls =
+                        if (properties.skipRecentlyCheckedExpiredHours > 0) {
+                            val cutoff =
+                                LocalDateTime.now().minusHours(properties.skipRecentlyCheckedExpiredHours.toLong())
+                            expiredCouponRepository.findRecentlyCheckedExpiredUrls(cutoff)
+                        } else {
+                            emptySet()
+                        }
+
+                    val urlsToEnqueue = uniqueUrls.filterNot { recentlyExpiredUrls.contains(it) }
+                    log.info(
+                        "Discovered {} unique URLs (skipped {} recently checked expired). Handing off {} tasks...",
+                        uniqueUrls.size,
+                        uniqueUrls.size - urlsToEnqueue.size,
+                        urlsToEnqueue.size,
+                    )
+
+                    for (url in urlsToEnqueue) {
                         courseScraperService.enqueueScrapingTask(url, "crawler")
                     }
 
-                    log.info("Crawl round finished. Handed off {} tasks.", uniqueUrls.size)
+                    log.info("Crawl round finished. Handed off {} tasks.", urlsToEnqueue.size)
                     LastFetchTimeManager.updateLastBulkRefreshCoupon()
 
                     delayUntilTheNextRound(startTime.get())

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
 @Repository
-interface ExpiredCouponRepository : JpaRepository<ExpiredCourseData, Int> {
+interface ExpiredCouponRepository : JpaRepository<ExpiredCourseData, String> {
     @Query("SELECT e.couponUrl FROM ExpiredCourseData e WHERE e.couponUrl IS NOT NULL")
     fun findAllCouponUrls(): Set<String>
 
