@@ -29,6 +29,7 @@ jobrunr:
 custom:
   jwt-expiration: ${CUSTOM_JWT_EXPIRATION:86400000}
   jwt-secret: ${CUSTOM_JWT_SECRET:}
+  mock-auth-enabled: ${CUSTOM_MOCK_AUTH_ENABLED:false}
   async:
     scraper:
       core-pool-size: ${CUSTOM_ASYNC_CORE_POOL_SIZE:5}

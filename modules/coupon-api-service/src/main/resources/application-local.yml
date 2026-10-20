@@ -30,6 +30,8 @@ logging:
 custom:
   jwt-expiration: ${CUSTOM_JWT_EXPIRATION:86400000}
   jwt-secret: ${CUSTOM_JWT_SECRET:local_dev_jwt_secret_key_must_be_at_least_32_characters_long_for_security}
+  mock-auth-enabled: true
+  google-client-id: ${GOOGLE_CLIENT_ID:local-dev-google-client-id.apps.googleusercontent.com}
   async:
     scraper:
       core-pool-size: 5

@@ -24,8 +24,8 @@ class UserEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Int = 0,
-    @Column(unique = true)
-    var username: String? = null,
+    @Column(unique = true, nullable = false)
+    var username: String = "",
     var fullName: String? = null,
     @Column(unique = true)
     var email: String? = null,

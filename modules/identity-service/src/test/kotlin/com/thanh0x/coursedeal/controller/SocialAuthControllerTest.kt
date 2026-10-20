@@ -62,5 +62,49 @@ class SocialAuthControllerTest {
             .andExpect(jsonPath("$.tokenType").value("Bearer"))
     }
 
+    @Test
+    fun `login with missing provider should return 400 Bad Request`() {
+        val json = """{"provider": null, "idToken": "valid-id-token-long-enough"}"""
+
+        mockMvc.perform(
+            post("/api/v1/auth/social/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json),
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `login with short idToken should return 400 Bad Request`() {
+        val json = """{"provider": "GOOGLE", "idToken": "short"}"""
+
+        mockMvc.perform(
+            post("/api/v1/auth/social/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json),
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `mockLogin should return token from service`() {
+        val response =
+            AuthResponseDTO(
+                accessToken = "mock-dev-jwt",
+                tokenType = "Bearer",
+            )
+
+        `when`(socialAuthService.loginMock(any())).thenReturn(response)
+
+        mockMvc.perform(
+            post("/api/v1/auth/social/mock-login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"tester@example.com","name":"Test User"}"""),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.accessToken").value("mock-dev-jwt"))
+            .andExpect(jsonPath("$.tokenType").value("Bearer"))
+    }
+
     private fun <T> any(): T = ArgumentMatchers.any()
 }
