@@ -16,7 +16,7 @@ The Course Deal Server is a modern, asynchronous application designed to crawl 1
 - **Search & Filter**: Powerful querying capabilities with rich metadata (language, rating, reviews, etc.) for local client-side sorting.
 
 ## Architecture
-Each module owns one responsibility; the two deployables (`coupon-api-service`, `coupon-crawler-service`) compose the rest.
+Each module owns one responsibility; the two deployables (`coupon-api-service`, `coupon-crawler-service`) compose the rest. For the full topology, sequence diagrams, and per-module breakdown, see **[docs/architecture.md](docs/architecture.md)**.
 - **`modules/coupon-common`**: Cross-cutting utilities used by nearly every other module (logging helper, shared exceptions).
 - **`modules/coupon-domain`**: Pure data layer containing JPA entities, repositories, and DTOs.
 - **`modules/coupon-infrastructure`**: Redis caching/config only.
@@ -39,6 +39,7 @@ docker compose -f docker-compose.prod.yml up
 This pulls the API/crawler images built by GitHub Actions and starts MySQL/Redis alongside them.
 
 ## Documentation
+- **[docs/architecture.md](docs/architecture.md)** — comprehensive system architecture, 9-module deep dive, and end-to-end data flow sequence diagram.
 - **[docs/getting-started.md](docs/getting-started.md)** — running services from source, local dev profiles, database migrations, configuration, API docs, and troubleshooting.
 - **[docs/business-logic.md](docs/business-logic.md)** — how the discovery/crawling/notification pipeline actually flows.
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** — code style, linting, and how to submit a PR.
