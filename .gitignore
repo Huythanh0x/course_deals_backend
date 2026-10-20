@@ -43,3 +43,10 @@ fetched_time.json
 .env.local
 .env.*.local
 logs/
+# macOS
+.DS_Store
+
+# Google Antigravity / Agents
+.agents/tickets/
+.agents/worktrees/
+gradle.properties
