@@ -28,8 +28,17 @@ class PasskeyServiceTest {
     private val redisTemplate = mock(RedisTemplate::class.java) as RedisTemplate<String, Any>
     private val valueOperations = mock(ValueOperations::class.java) as ValueOperations<String, Any>
     private val tokenProvider = mock(TokenProvider::class.java)
+    private val userSessionService = mock(UserSessionService::class.java)
 
-    private val service = PasskeyService(relyingParty, userRepository, passkeyRepository, redisTemplate, tokenProvider)
+    private val service =
+        PasskeyService(
+            relyingParty,
+            userRepository,
+            passkeyRepository,
+            redisTemplate,
+            tokenProvider,
+            userSessionService,
+        )
 
     @BeforeEach
     fun setUp() {

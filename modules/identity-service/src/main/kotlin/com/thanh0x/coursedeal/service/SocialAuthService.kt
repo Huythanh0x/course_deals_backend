@@ -5,6 +5,7 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.thanh0x.coursedeal.config.IdentityProperties
 import com.thanh0x.coursedeal.dto.AuthResponseDTO
+import com.thanh0x.coursedeal.dto.MockLoginRequestDTO
 import com.thanh0x.coursedeal.dto.SocialLoginRequestDTO
 import com.thanh0x.coursedeal.exception.BadRequestException
 import com.thanh0x.coursedeal.model.user.AuthProvider
@@ -25,12 +26,13 @@ class SocialAuthService(
     private val socialAccountRepository: SocialAccountRepository,
     private val tokenProvider: TokenProvider,
     private val properties: IdentityProperties,
+    private val userSessionService: UserSessionService,
 ) {
     @Transactional
     fun login(request: SocialLoginRequestDTO): AuthResponseDTO {
         val user: UserEntity =
             when (request.provider) {
-                AuthProvider.GOOGLE -> verifyGoogleToken(request.idToken!!)
+                AuthProvider.GOOGLE -> verifyGoogleToken(request.idToken)
                 AuthProvider.APPLE -> verifyAppleToken()
                 else -> throw BadRequestException("Unsupported social provider")
             }
@@ -40,7 +42,26 @@ class SocialAuthService(
             userRepository.save(user)
         }
 
-        val token = tokenProvider.createToken(user)
+        val sessionId = userSessionService.createSession(user)
+        val token = tokenProvider.createToken(user, sessionId)
+        return AuthResponseDTO(
+            accessToken = token,
+            tokenType = "Bearer",
+        )
+    }
+
+    @Transactional
+    fun loginMock(request: MockLoginRequestDTO = MockLoginRequestDTO()): AuthResponseDTO {
+        if (!properties.mockAuthEnabled) {
+            throw BadRequestException("Mock authentication is disabled in this environment")
+        }
+        val user = findOrCreateUser(request.email, request.name, AuthProvider.GOOGLE, "mock-google-${request.email}")
+        if (request.fcmToken != null) {
+            user.fcmToken = request.fcmToken
+            userRepository.save(user)
+        }
+        val sessionId = userSessionService.createSession(user)
+        val token = tokenProvider.createToken(user, sessionId)
         return AuthResponseDTO(
             accessToken = token,
             tokenType = "Bearer",
@@ -48,6 +69,10 @@ class SocialAuthService(
     }
 
     private fun verifyGoogleToken(idTokenString: String): UserEntity {
+        if (properties.mockAuthEnabled && idTokenString.startsWith("mock-")) {
+            return findOrCreateMockUser(idTokenString)
+        }
+
         try {
             val verifier =
                 GoogleIdTokenVerifier.Builder(NetHttpTransport(), GsonFactory())
@@ -66,7 +91,21 @@ class SocialAuthService(
             failGoogleVerification(e)
         } catch (e: IOException) {
             failGoogleVerification(e)
+        } catch (e: IllegalArgumentException) {
+            failGoogleVerification(e)
         }
+    }
+
+    private fun findOrCreateMockUser(idTokenString: String): UserEntity {
+        val email =
+            if (idTokenString.contains("@")) {
+                idTokenString.removePrefix("mock-")
+            } else {
+                "dev-user@coursedeals.com"
+            }
+        val name = "Local Dev User"
+        val providerId = "mock-google-$email"
+        return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId)
     }
 
     private fun failGoogleVerification(e: Exception): Nothing {

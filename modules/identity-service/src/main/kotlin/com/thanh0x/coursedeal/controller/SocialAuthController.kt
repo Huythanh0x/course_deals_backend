@@ -1,6 +1,7 @@
 package com.thanh0x.coursedeal.controller
 
 import com.thanh0x.coursedeal.dto.AuthResponseDTO
+import com.thanh0x.coursedeal.dto.MockLoginRequestDTO
 import com.thanh0x.coursedeal.dto.SocialLoginRequestDTO
 import com.thanh0x.coursedeal.service.SocialAuthService
 import io.swagger.v3.oas.annotations.Operation
@@ -28,5 +29,19 @@ class SocialAuthController(private val socialAuthService: SocialAuthService) {
         @Valid @RequestBody request: SocialLoginRequestDTO,
     ): ResponseEntity<AuthResponseDTO> {
         return ResponseEntity.ok(socialAuthService.login(request))
+    }
+
+    @PostMapping("/mock-login")
+    @Operation(
+        summary = "Local development mock authentication",
+        description =
+            "Directly returns a valid signed JWT for a local test user without contacting Google servers. " +
+                "Only active when custom.mock-auth-enabled is true (e.g. local profile). Accepts optional " +
+                "custom email, name, and fcmToken.",
+    )
+    fun mockLogin(
+        @RequestBody(required = false) request: MockLoginRequestDTO?,
+    ): ResponseEntity<AuthResponseDTO> {
+        return ResponseEntity.ok(socialAuthService.loginMock(request ?: MockLoginRequestDTO()))
     }
 }

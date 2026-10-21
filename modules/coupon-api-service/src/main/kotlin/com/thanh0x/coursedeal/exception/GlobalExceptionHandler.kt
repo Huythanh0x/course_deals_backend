@@ -2,8 +2,11 @@ package com.thanh0x.coursedeal.exception
 
 import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.dto.ApiErrorDTO
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.ServletWebRequest
@@ -17,6 +20,27 @@ import java.util.Date
 @ControllerAdvice
 class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
     private val log = logger()
+
+    override fun handleMethodArgumentNotValid(
+        ex: MethodArgumentNotValidException,
+        headers: HttpHeaders,
+        status: HttpStatusCode,
+        request: WebRequest,
+    ): ResponseEntity<Any>? {
+        val message =
+            ex.bindingResult.fieldErrors
+                .joinToString(", ") { "${it.field}: ${it.defaultMessage}" }
+                .ifBlank { "Validation failed" }
+        val error =
+            ApiErrorDTO(
+                timestamp = Date(),
+                status = HttpStatus.BAD_REQUEST.value(),
+                error = HttpStatus.BAD_REQUEST.reasonPhrase,
+                message = message,
+                path = (request as? ServletWebRequest)?.request?.requestURI ?: "",
+            )
+        return ResponseEntity(error, HttpStatus.BAD_REQUEST)
+    }
 
     @ExceptionHandler(BadRequestException::class)
     fun handleBadRequestException(

@@ -4,6 +4,7 @@ import com.thanh0x.coursedeal.dto.PreferenceDTO
 import com.thanh0x.coursedeal.model.user.UserEntity
 import com.thanh0x.coursedeal.model.user.UserPreference
 import com.thanh0x.coursedeal.repository.UserPreferenceRepository
+import com.thanh0x.coursedeal.repository.UserRepository
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController
 @SecurityRequirement(name = "bearerAuth")
 class PreferenceController(
     private val userPreferenceRepository: UserPreferenceRepository,
+    private val userRepository: UserRepository,
 ) {
     @GetMapping
     @Operation(
@@ -65,10 +67,10 @@ class PreferenceController(
     }
 
     private fun createDefaultPreference(user: UserEntity): UserPreference {
+        val managedUser = userRepository.findById(user.id).orElse(user)
         val pref =
             UserPreference(
-                user = user,
-                userId = user.id,
+                user = managedUser,
                 notificationsEnabled = true,
             )
         return userPreferenceRepository.save(pref)

@@ -7,6 +7,8 @@ data class IdentityProperties(
     var jwtSecret: String = "",
     var jwtExpiration: Long = 3600000,
     var googleClientId: String = "",
+    var mockAuthEnabled: Boolean = false,
+    var sessionTtlSeconds: Long = 2592000L,
     var webauthn: WebAuthnProperties = WebAuthnProperties(),
 )
 

@@ -30,7 +30,14 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    // Covers both /api/v1/auth/social/** and /api/v1/auth/passkey/**
+                    // Logout endpoints require an authenticated user
+                    .requestMatchers(
+                        "/api/v1/auth/logout",
+                        "/api/v1/auth/logout-all",
+                        "/api/v1/auth/social/logout",
+                        "/api/v1/auth/social/logout-all",
+                    ).authenticated()
+                    // Covers public login endpoints: /api/v1/auth/social/login, mock-login, and /api/v1/auth/passkey/**
                     .requestMatchers("/api/v1/auth/**").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/error").permitAll()

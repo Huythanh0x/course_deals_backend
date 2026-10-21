@@ -35,7 +35,7 @@ graph TD
 
     subgraph "External Dependencies"
         Domain -- "Flyway" --> MySQL[(MySQL)]
-        Infra -- "Cache/Job Storage" --> Redis((Redis))
+        Infra -- "Cache" --> Redis((Redis))
         Notify -- "Push Alerts" --> FCM((Firebase))
         Scraper -- "Validation" --> Ext((Course Providers))
     end
@@ -46,7 +46,7 @@ graph TD
 - **`modules/coupon-domain`**: Pure data layer. Entities are mapped to MySQL via JPA.
 - **`modules/coupon-infrastructure`**: Redis caching/config only.
 - **`modules/notification-service`**: Firebase Admin SDK (FCM) push notifications.
-- **`modules/course-scraper`**: Coupon scraping/validation pipeline shared by both deployables (JobRunr-backed).
+- **`modules/course-scraper`**: Coupon scraping/validation pipeline shared by both deployables (JobRunr-backed on MySQL).
 - **`modules/course-external-api`**: Client for Udemy's public course API, used only by `coupon-api-service`.
 - **`modules/identity-service`**: Standalone authentication (Social/Passkey) and user preferences.
 - **`modules/coupon-api-service`**: Main REST entry point for course searching and details.
@@ -92,14 +92,60 @@ We use hierarchical YAML files for easier management of complex settings.
 
 | File | Purpose | Key Knobs |
 | ------------ | ------- | ---------- |
-| `application.yml` | Base Config | `spring.datasource`, `org.jobrunr` |
-| `application-local.yml` | Dev Environment | `custom.async.scraper.max-pool-size=10`, `jwt-secret`, `logging.level.org.springframework.web=DEBUG` |
+| `application.yml` | Base Config | `spring.datasource`, `jobrunr`, `custom.mock-auth-enabled=false` |
+| `application-local.yml` | Dev Environment | `custom.mock-auth-enabled=true`, `custom.google-client-id`, `jwt-secret`, `logging.level.org.springframework.web=DEBUG` |
 
-### Modern Auth Setup
-To enable the full feature set, define these in your environment:
-- `GOOGLE_CLIENT_ID`: For social login validation.
-- `FIREBASE_CONFIG_PATH`: Path to `service-account.json` for FCM notifications.
-- `WEBAUTHN_RP_ID`: Your domain for Passkey support (e.g., `localhost`).
+### Authentication & Local Dev Mock Auth Setup
+
+The backend uses a passwordless authentication model supporting **Google Social Login** and **WebAuthn/FIDO2 Passkeys**, returning signed stateless JWTs (`Bearer <token>`).
+
+#### 1. Google OAuth Social Login (Production / Real Tokens)
+Define `GOOGLE_CLIENT_ID` in your environment (or `.env`):
+- `GOOGLE_CLIENT_ID`: OAuth 2.0 Web/Android Client ID used to cryptographically verify ID tokens via `GoogleIdTokenVerifier`.
+- Request: `POST /api/v1/auth/social/login` with body:
+  ```json
+  {
+    "provider": "GOOGLE",
+    "idToken": "<real-google-id-token>",
+    "fcmToken": "<optional-fcm-token>"
+  }
+  ```
+- Response: `{"accessToken": "<jwt>", "tokenType": "Bearer"}` (HTTP 200). If the token is invalid or expired, returns `400 Bad Request`.
+
+#### 2. Local Dev Mock Authentication (Mobile Emulator / Testing)
+When developing without live Google Play Services or without public OAuth credentials, enable mock auth via `custom.mock-auth-enabled: true` (already enabled by default in `application-local.yml`).
+
+Two convenient ways to obtain a mock JWT:
+- **Option A (Standard Endpoint Bypass):** Send any `idToken` starting with `mock-` to `POST /api/v1/auth/social/login`:
+  ```json
+  {
+    "provider": "GOOGLE",
+    "idToken": "mock-google-token"
+  }
+  ```
+  The backend bypasses Google servers and provisions a local dev user (`dev-user@coursedeals.com`), returning a valid signed JWT.
+- **Option B (Dedicated Mock Endpoint):** Call `POST /api/v1/auth/social/mock-login`:
+  ```bash
+  curl -X POST http://localhost:8080/api/v1/auth/social/mock-login \
+    -H "Content-Type: application/json" \
+    -d '{"email": "tester@example.com", "name": "Local Tester"}'
+  ```
+
+*Security note:* When `custom.mock-auth-enabled` is `false` (production profile), mock tokens are passed to `GoogleIdTokenVerifier` and immediately rejected with `400 Bad Request`.
+
+#### 3. WebAuthn / Passkeys Setup
+Passkeys use FIDO2 challenge/assertion ceremonies (public endpoints under `/api/v1/auth/passkey`):
+- `GET /api/v1/auth/passkey/registration/options?email=<email>` -> `POST /api/v1/auth/passkey/registration/finish?email=<email>`
+- `GET /api/v1/auth/passkey/authentication/options?email=<email>` -> `POST /api/v1/auth/passkey/authentication/finish?email=<email>` (returns JWT)
+- Configured via `WEBAUTHN_RP_ID` (domain, e.g. `localhost`) and `WEBAUTHN_ORIGINS`. Challenges are cached in Redis with a 5-minute TTL.
+
+#### 4. Active Session Management & Logout (Redis)
+- On successful login (Google OAuth, Mock Auth, Passkeys), an active session is saved in Redis (`auth:session:<sessionId>`) with a 30-day TTL and indexed under `auth:user_sessions:<userId>`.
+- The returned JWT contains a `sid` claim matching this session ID.
+- `TokenAuthenticationFilter` validates both the JWT signature and that the session key is present in Redis.
+- **Logout endpoints:**
+  - `POST /api/v1/auth/logout`: Invalidates the current session in Redis immediately.
+  - `POST /api/v1/auth/logout-all`: Invalidates all active sessions for the user across all devices.
 
 ## Useful Gradle Tasks
 - `./gradlew build` – clean build and compile all 9 modules.
