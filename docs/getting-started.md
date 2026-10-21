@@ -139,6 +139,14 @@ Passkeys use FIDO2 challenge/assertion ceremonies (public endpoints under `/api/
 - `GET /api/v1/auth/passkey/authentication/options?email=<email>` -> `POST /api/v1/auth/passkey/authentication/finish?email=<email>` (returns JWT)
 - Configured via `WEBAUTHN_RP_ID` (domain, e.g. `localhost`) and `WEBAUTHN_ORIGINS`. Challenges are cached in Redis with a 5-minute TTL.
 
+#### 4. Active Session Management & Logout (Redis)
+- On successful login (Google OAuth, Mock Auth, Passkeys), an active session is saved in Redis (`auth:session:<sessionId>`) with a 30-day TTL and indexed under `auth:user_sessions:<userId>`.
+- The returned JWT contains a `sid` claim matching this session ID.
+- `TokenAuthenticationFilter` validates both the JWT signature and that the session key is present in Redis.
+- **Logout endpoints:**
+  - `POST /api/v1/auth/logout`: Invalidates the current session in Redis immediately.
+  - `POST /api/v1/auth/logout-all`: Invalidates all active sessions for the user across all devices.
+
 ## Useful Gradle Tasks
 - `./gradlew build` – clean build and compile all 9 modules.
 - `./gradlew test` – runs the test suite (includes **SSRF Hardening**, **Auth**, **SecurityConfig**, and background-job tests).

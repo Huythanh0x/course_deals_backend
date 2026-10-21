@@ -26,6 +26,7 @@ class SocialAuthService(
     private val socialAccountRepository: SocialAccountRepository,
     private val tokenProvider: TokenProvider,
     private val properties: IdentityProperties,
+    private val userSessionService: UserSessionService,
 ) {
     @Transactional
     fun login(request: SocialLoginRequestDTO): AuthResponseDTO {
@@ -41,7 +42,8 @@ class SocialAuthService(
             userRepository.save(user)
         }
 
-        val token = tokenProvider.createToken(user)
+        val sessionId = userSessionService.createSession(user)
+        val token = tokenProvider.createToken(user, sessionId)
         return AuthResponseDTO(
             accessToken = token,
             tokenType = "Bearer",
@@ -58,7 +60,8 @@ class SocialAuthService(
             user.fcmToken = request.fcmToken
             userRepository.save(user)
         }
-        val token = tokenProvider.createToken(user)
+        val sessionId = userSessionService.createSession(user)
+        val token = tokenProvider.createToken(user, sessionId)
         return AuthResponseDTO(
             accessToken = token,
             tokenType = "Bearer",

@@ -24,6 +24,7 @@ class SocialAuthServiceTest {
     private val socialAccountRepository = mock(SocialAccountRepository::class.java)
     private val tokenProvider = mock(TokenProvider::class.java)
     private val properties = IdentityProperties()
+    private val userSessionService = mock(UserSessionService::class.java)
 
     private val service =
         SocialAuthService(
@@ -31,6 +32,7 @@ class SocialAuthServiceTest {
             socialAccountRepository = socialAccountRepository,
             tokenProvider = tokenProvider,
             properties = properties,
+            userSessionService = userSessionService,
         )
 
     private fun <T> nonNullAny(fallback: T): T = ArgumentMatchers.any<T>() ?: fallback
@@ -38,7 +40,8 @@ class SocialAuthServiceTest {
     @BeforeEach
     fun setUp() {
         val dummyUser = UserEntity()
-        `when`(tokenProvider.createToken(nonNullAny(dummyUser))).thenReturn("signed-jwt-token")
+        `when`(userSessionService.createSession(nonNullAny(dummyUser))).thenReturn("mock-session-id")
+        `when`(tokenProvider.createToken(nonNullAny(dummyUser), ArgumentMatchers.any())).thenReturn("signed-jwt-token")
         `when`(userRepository.save(nonNullAny(dummyUser))).thenAnswer { it.arguments[0] }
     }
 

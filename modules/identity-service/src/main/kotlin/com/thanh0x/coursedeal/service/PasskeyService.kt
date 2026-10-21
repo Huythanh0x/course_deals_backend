@@ -39,6 +39,7 @@ class PasskeyService(
     private val passkeyRepository: PasskeyCredentialRepository,
     private val redisTemplate: RedisTemplate<String, Any>,
     private val tokenProvider: TokenProvider,
+    private val userSessionService: UserSessionService,
 ) {
     private val log = logger()
     private val objectMapper = ObjectMapper()
@@ -109,8 +110,9 @@ class PasskeyService(
 
             passkeyRepository.save(credential)
 
+            val sessionId = userSessionService.createSession(user)
             return AuthResponseDTO(
-                accessToken = tokenProvider.createToken(user),
+                accessToken = tokenProvider.createToken(user, sessionId),
                 tokenType = "Bearer",
             )
         } catch (e: BadRequestException) {
@@ -171,8 +173,9 @@ class PasskeyService(
                 passkeyRepository.save(this)
             }
 
+            val sessionId = userSessionService.createSession(user)
             AuthResponseDTO(
-                accessToken = tokenProvider.createToken(user),
+                accessToken = tokenProvider.createToken(user, sessionId),
                 tokenType = "Bearer",
             )
         } catch (e: BadRequestException) {

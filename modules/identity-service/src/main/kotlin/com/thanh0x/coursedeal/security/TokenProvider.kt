@@ -33,17 +33,45 @@ class TokenProvider(private val properties: IdentityProperties) {
             }
     }
 
-    fun createToken(user: UserEntity): String {
+    fun createToken(
+        user: UserEntity,
+        sessionId: String? = null,
+    ): String {
         val now = Date()
         val expiryDate = Date(now.time + properties.jwtExpiration)
 
-        return Jwts.builder()
-            .setSubject(user.id.toString())
-            .claim("email", user.email)
-            .setIssuedAt(now)
-            .setExpiration(expiryDate)
+        val builder =
+            Jwts.builder()
+                .setSubject(user.id.toString())
+                .claim("email", user.email)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+
+        if (sessionId != null) {
+            builder.claim("sid", sessionId)
+        }
+
+        return builder
             .signWith(key, SignatureAlgorithm.HS512)
             .compact()
+    }
+
+    fun getSessionIdFromToken(token: String): String? {
+        return try {
+            val claims =
+                Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .body
+            claims["sid"] as? String
+        } catch (ex: JwtException) {
+            log.debug("Failed to extract sid from JWT: {}", ex.message)
+            null
+        } catch (ex: IllegalArgumentException) {
+            log.debug("Failed to extract sid from JWT: {}", ex.message)
+            null
+        }
     }
 
     fun getUserIdFromToken(token: String): Int? {

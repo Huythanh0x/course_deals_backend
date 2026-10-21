@@ -52,6 +52,10 @@ class CourseDetailControllerTest {
     @MockitoBean
     private lateinit var tokenProvider: TokenProvider
 
+    @Suppress("UnusedPrivateProperty")
+    @MockitoBean
+    private lateinit var userSessionService: com.thanh0x.coursedeal.service.UserSessionService
+
     @Test
     fun `getCourseDetails returns 200 with the course when the service finds it`() {
         `when`(courseDetailService.getCourseDetails(123, null)).thenReturn(
