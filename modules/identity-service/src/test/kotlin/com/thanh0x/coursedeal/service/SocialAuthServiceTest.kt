@@ -97,6 +97,23 @@ class SocialAuthServiceTest {
     }
 
     @Test
+    fun `loginMock populates default avatarUrl on user`() {
+        properties.mockAuthEnabled = true
+
+        val request =
+            MockLoginRequestDTO(
+                email = "custom-dev-avatar@example.com",
+                name = "Custom Dev",
+            )
+
+        val captor = org.mockito.ArgumentCaptor.forClass(UserEntity::class.java)
+        service.loginMock(request)
+
+        verify(userRepository).save(captor.capture())
+        assertEquals("https://lh3.googleusercontent.com/a/default-user", captor.value.avatarUrl)
+    }
+
+    @Test
     fun `loginMock when mockAuthEnabled is false throws BadRequestException`() {
         properties.mockAuthEnabled = false
 
