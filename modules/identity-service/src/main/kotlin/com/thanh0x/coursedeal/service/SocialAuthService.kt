@@ -55,7 +55,15 @@ class SocialAuthService(
         if (!properties.mockAuthEnabled) {
             throw BadRequestException("Mock authentication is disabled in this environment")
         }
-        val user = findOrCreateUser(request.email, request.name, AuthProvider.GOOGLE, "mock-google-${request.email}")
+        val defaultAvatar = "https://lh3.googleusercontent.com/a/default-user"
+        val user =
+            findOrCreateUser(
+                request.email,
+                request.name,
+                AuthProvider.GOOGLE,
+                "mock-google-${request.email}",
+                defaultAvatar,
+            )
         if (request.fcmToken != null) {
             user.fcmToken = request.fcmToken
             userRepository.save(user)
@@ -85,8 +93,9 @@ class SocialAuthService(
             val email = payload.email
             val providerId = payload.subject
             val name = payload["name"] as String?
+            val picture = payload["picture"] as String?
 
-            return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId)
+            return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId, picture)
         } catch (e: GeneralSecurityException) {
             failGoogleVerification(e)
         } catch (e: IOException) {
@@ -105,7 +114,8 @@ class SocialAuthService(
             }
         val name = "Local Dev User"
         val providerId = "mock-google-$email"
-        return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId)
+        val avatar = "https://lh3.googleusercontent.com/a/default-user"
+        return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId, avatar)
     }
 
     private fun failGoogleVerification(e: Exception): Nothing {
@@ -122,10 +132,16 @@ class SocialAuthService(
         name: String?,
         provider: AuthProvider,
         providerId: String,
+        avatarUrl: String? = null,
     ): UserEntity {
         val socialAccount = socialAccountRepository.findByProviderAndProviderId(provider, providerId)
         if (socialAccount != null) {
-            return socialAccount.user!!
+            val existingUser = socialAccount.user!!
+            if (avatarUrl != null && existingUser.avatarUrl == null) {
+                existingUser.avatarUrl = avatarUrl
+                userRepository.save(existingUser)
+            }
+            return existingUser
         }
 
         val user =
@@ -134,11 +150,17 @@ class SocialAuthService(
                     UserEntity(
                         email = email,
                         fullName = name,
+                        avatarUrl = avatarUrl,
                         // fallback username
                         username = email,
                     )
                 userRepository.save(newUser)
             }
+
+        if (avatarUrl != null && user.avatarUrl == null) {
+            user.avatarUrl = avatarUrl
+            userRepository.save(user)
+        }
 
         val newSocialAccount =
             SocialAccount(

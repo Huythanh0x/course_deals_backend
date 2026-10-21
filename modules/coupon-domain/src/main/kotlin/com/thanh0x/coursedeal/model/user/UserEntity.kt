@@ -30,6 +30,7 @@ class UserEntity(
     @Column(unique = true)
     var email: String? = null,
     var fcmToken: String? = null,
+    var avatarUrl: String? = null,
     @ManyToMany(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
     @JoinTable(
         name = "user_roles",
