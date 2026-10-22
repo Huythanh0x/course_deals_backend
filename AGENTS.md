@@ -73,7 +73,9 @@ Full details in `/docs`:
 - [`docs/adr-guide.md`](docs/adr-guide.md) — when and how to write Architecture Decision Records in `docs/adr/`
 - [`docs/ci-cd.md`](docs/ci-cd.md) — CI/CD pipelines, Docker deployment
 
-The `ticket-flow` skill runs the full lifecycle as a gated sequence — `new-ticket` (if needed) → `read-requirements` → `scan-related-code` → `confirm-edge-cases` → `implement-change` → `run-tests` → `capture-evidence` → `ship-pr` — stopping to report and confirm after every step, backed by a resumable per-ticket workspace under `.agents/tickets/` (git-ignored).
+The `ticket-flow` skill runs the full lifecycle as a gated single-agent sequence — `new-ticket` (if needed) → `read-requirements` → `scan-related-code` → `confirm-edge-cases` → `implement-change` → `run-tests` → `capture-evidence` → `ship-pr` — stopping to report and confirm after every step, backed by a resumable per-ticket workspace under `.agents/tickets/` (git-ignored).
+
+The `team-flow` skill runs the same lifecycle using a **5-agent specialized team** across `course_deals_backend` and `course_deals_ComposeMultiplatform` (**PM/Architect**, `backend-engineer`, `android-engineer`, `security-arch-reviewer`, and `qa-release-engineer`) with only **2 human-in-the-loop checkpoints** (1: Approve Spec, API Contract & Edge Cases; 2: Ready to Merge PRs).
 
 ## Evidence capture conventions
 
