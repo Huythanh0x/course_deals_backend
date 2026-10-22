@@ -43,9 +43,11 @@ class SocialAuthService(
         }
 
         val sessionId = userSessionService.createSession(user)
+        val refreshToken = userSessionService.createRefreshToken(sessionId)
         val token = tokenProvider.createToken(user, sessionId)
         return AuthResponseDTO(
             accessToken = token,
+            refreshToken = refreshToken,
             tokenType = "Bearer",
         )
     }
@@ -69,9 +71,11 @@ class SocialAuthService(
             userRepository.save(user)
         }
         val sessionId = userSessionService.createSession(user)
+        val refreshToken = userSessionService.createRefreshToken(sessionId)
         val token = tokenProvider.createToken(user, sessionId)
         return AuthResponseDTO(
             accessToken = token,
+            refreshToken = refreshToken,
             tokenType = "Bearer",
         )
     }

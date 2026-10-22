@@ -111,8 +111,10 @@ class PasskeyService(
             passkeyRepository.save(credential)
 
             val sessionId = userSessionService.createSession(user)
+            val refreshToken = userSessionService.createRefreshToken(sessionId)
             return AuthResponseDTO(
                 accessToken = tokenProvider.createToken(user, sessionId),
+                refreshToken = refreshToken,
                 tokenType = "Bearer",
             )
         } catch (e: BadRequestException) {
@@ -174,8 +176,10 @@ class PasskeyService(
             }
 
             val sessionId = userSessionService.createSession(user)
+            val refreshToken = userSessionService.createRefreshToken(sessionId)
             AuthResponseDTO(
                 accessToken = tokenProvider.createToken(user, sessionId),
+                refreshToken = refreshToken,
                 tokenType = "Bearer",
             )
         } catch (e: BadRequestException) {
