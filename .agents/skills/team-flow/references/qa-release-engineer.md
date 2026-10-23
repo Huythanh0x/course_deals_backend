@@ -35,7 +35,8 @@ If `/Users/thanh0x/StudioProjects/course_deals_ComposeMultiplatform` has changes
    - If UI-facing and emulator is available: install debug build (`./gradlew installLocalDebug`), navigate to the target screen, capture screenshots via `adb exec-out screencap -p > .agents/tickets/<issue-number>-<slug>/evidence/<name>.png`.
    - Upload 1-3 key screenshots to `https://r2-image-worker.huythanh0x.workers.dev/upload` using `$R2_IMAGE_UPLOAD_USER:$R2_IMAGE_UPLOAD_TOKEN`.
    - **SECURITY RULE**: Never print `$R2_IMAGE_UPLOAD_USER`, `$R2_IMAGE_UPLOAD_TOKEN`, or the `-u` value, never use `curl -v`, and never wrap in `set -x`.
-   - Verify each constructed R2 URL returns HTTP `200` and record markdown image links (`![caption](<url>)`) under `### Screenshots` in `NOTES.md`.
+   - **URL CONSTRUCTION**: The upload endpoint returns a bare filename hash (e.g., `ec108...png`). Always construct the public URL as `https://r2-image-worker.huythanh0x.workers.dev/<filename>`. Never use raw `pub-*.r2.dev` bucket domains (which return HTTP 401).
+   - Verify each constructed R2 URL returns HTTP `200` (`curl -sS -o /dev/null -w '%{http_code}' "$url"`) and record markdown image links (`![caption](<url>)`) under `### Screenshots` in `NOTES.md`.
    - Reset any forced emulator settings (rotation, night mode) when done.
 
 ---
