@@ -100,9 +100,14 @@ Do **not** proceed to Phase 2 until the user approves.
 
 ## Phase 2: Ticket & Workspace Setup (Main Agent)
 
+> [!CRITICAL]
+> **HARD PREREQUISITE GATE FOR PHASE 3**:
+> Under NO circumstances should `backend-engineer` or `android-engineer` subagents be defined or invoked before this phase is 100% complete!
+> Every task MUST have an active GitHub Issue published with the full spec/API contract and confirmed issue URL, plus local `NOTES.md` initialized.
+
 Once approved at Checkpoint 1:
 
-1. **Create GitHub Issue(s) & Branches** (skip issue creation if the user provided existing issue number(s)):
+1. **Create GitHub Issue(s) & Branches** (skip issue creation ONLY if the user provided existing issue number(s)):
    - Follow `new-ticket` and `create-sub-issues` in the target repo(s):
      - Top-level issue: `gh issue create -R Huythanh0x/<repo> --title "..." --label "type: ..." --label "priority: ..." --label "area: ..." --label "size: ..." --project "Course Deals" --body "..."`
      - Sub-issues (for full-stack parent + child issues): create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform`, link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
