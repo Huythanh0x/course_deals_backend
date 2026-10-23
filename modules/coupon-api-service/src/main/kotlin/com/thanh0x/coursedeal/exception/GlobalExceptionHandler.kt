@@ -50,6 +50,22 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         return createErrorResponse(HttpStatus.BAD_REQUEST, exception.message ?: "Bad Request", request)
     }
 
+    @ExceptionHandler(ConflictException::class)
+    fun handleConflictException(
+        exception: ConflictException,
+        request: WebRequest,
+    ): ResponseEntity<ApiErrorDTO> {
+        return createErrorResponse(HttpStatus.CONFLICT, exception.message ?: "Conflict", request)
+    }
+
+    @ExceptionHandler(UnauthorizedException::class)
+    fun handleUnauthorizedException(
+        exception: UnauthorizedException,
+        request: WebRequest,
+    ): ResponseEntity<ApiErrorDTO> {
+        return createErrorResponse(HttpStatus.UNAUTHORIZED, exception.message ?: "Unauthorized", request)
+    }
+
     @ExceptionHandler(ResourceNotFoundException::class)
     fun handleResourceNotFoundException(
         exception: ResourceNotFoundException,
