@@ -39,6 +39,7 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     ).authenticated()
                     // Covers public login endpoints: /api/v1/auth/social/login, mock-login, and /api/v1/auth/passkey/**
                     .requestMatchers("/api/v1/auth/**").permitAll()
+                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/error").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
