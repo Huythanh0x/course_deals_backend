@@ -6,7 +6,6 @@ import com.thanh0x.coursedeal.dto.CourseReportResponse
 import com.thanh0x.coursedeal.model.report.CourseReport
 import com.thanh0x.coursedeal.repository.CouponCourseRepository
 import com.thanh0x.coursedeal.repository.report.CourseReportRepository
-import org.jobrunr.scheduling.JobScheduler
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +16,6 @@ class CourseReportService(
     private val courseReportRepository: CourseReportRepository,
     private val couponCourseRepository: CouponCourseRepository,
     private val courseScraperService: CourseScraperService,
-    private val jobScheduler: JobScheduler,
 ) {
     private val log = logger()
 
@@ -45,12 +43,11 @@ class CourseReportService(
 
         val reportId = checkNotNull(report.id) { "Report ID must not be null after persisting" }
 
-        // Asynchronously enqueue background re-validation if couponUrl is available
+        // Asynchronously enqueue background re-validation via existing CourseScraperService JobRunr job
         course.couponUrl?.let { couponUrl ->
+            val remoteAddr = clientIp ?: "report-worker"
             log.info("Enqueuing re-validation for reported course: {} (Report ID: {})", courseId, reportId)
-            jobScheduler.enqueue {
-                processReportRevalidation(reportId, couponUrl, clientIp ?: "report-worker")
-            }
+            courseScraperService.enqueueScrapingTask(couponUrl, remoteAddr)
         }
 
         return CourseReportResponse(
@@ -61,28 +58,5 @@ class CourseReportService(
             status = report.status,
             createdAt = report.createdAt,
         )
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    @Transactional
-    fun processReportRevalidation(
-        reportId: Long,
-        couponUrl: String,
-        remoteAddr: String,
-    ) {
-        log.info("Processing background re-validation for reportId: {}, url: {}", reportId, couponUrl)
-        try {
-            courseScraperService.validateAndSaveCoupon(couponUrl, remoteAddr)
-            courseReportRepository.findById(reportId).ifPresent { report ->
-                report.status = "PROCESSED"
-                courseReportRepository.save(report)
-            }
-        } catch (e: Exception) {
-            log.error("Failed to re-validate reported coupon: {}", couponUrl, e)
-            courseReportRepository.findById(reportId).ifPresent { report ->
-                report.status = "FAILED"
-                courseReportRepository.save(report)
-            }
-        }
     }
 }
