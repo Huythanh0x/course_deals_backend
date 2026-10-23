@@ -57,9 +57,10 @@ and targeted push notifications.
   - Both combined: `./gradlew ktlintCheck detekt`
 - Run local stack:
   - Infrastructure (MySQL & Redis): `docker compose -f docker-compose.local.yml up -d`
-  - API Service: `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=local'`
+  - Dev API Service (Port 8080): `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=local'`
+  - Stable Mobile-Local API Service (Port 8081, isolated DB & Redis index 1): `bash scripts/bootRunMobileLocal.sh` (or `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=mobile-local'`)
   - Crawler Service: `./gradlew :modules:coupon-crawler-service:bootRun --args='--spring.profiles.active=local'`
-  - Run both services simultaneously: `./gradlew bootRunLocal` (or `bash scripts/bootRunLocal.sh`)
+  - Run both dev services simultaneously: `./gradlew bootRunLocal` (or `bash scripts/bootRunLocal.sh`)
 
 ## Git / GitHub workflow
 
@@ -73,7 +74,14 @@ Full details in `/docs`:
 - [`docs/adr-guide.md`](docs/adr-guide.md) — when and how to write Architecture Decision Records in `docs/adr/`
 - [`docs/ci-cd.md`](docs/ci-cd.md) — CI/CD pipelines, Docker deployment
 
-The `ticket-flow` skill runs the full lifecycle as a gated sequence — `new-ticket` (if needed) → `read-requirements` → `scan-related-code` → `confirm-edge-cases` → `implement-change` → `run-tests` → `capture-evidence` → `ship-pr` — stopping to report and confirm after every step, backed by a resumable per-ticket workspace under `.agents/tickets/` (git-ignored).
+The `ticket-flow` skill runs the full lifecycle as a gated single-agent sequence — `new-ticket` (if needed) → `read-requirements` → `scan-related-code` → `confirm-edge-cases` → `implement-change` → `run-tests` → `capture-evidence` → `ship-pr` — stopping to report and confirm after every step, backed by a resumable per-ticket workspace under `.agents/tickets/` (git-ignored).
+
+The `team-flow` skill runs the same lifecycle using a **5-agent specialized team** across `course_deals_backend` and `course_deals_ComposeMultiplatform` (**PM/Architect**, `backend-engineer`, `android-engineer`, `security-arch-reviewer`, and `qa-release-engineer`) with only **2 human-in-the-loop checkpoints** (1: Approve Spec, API Contract & Edge Cases; 2: Ready to Merge PRs).
+
+The `sprint-flow` skill manages the **1-week solo developer sprint rhythm** (Monday–Saturday build & test, Sunday stop & plan) integrated with GitHub Projects:
+- [`docs/SPRINT_GUIDE.md`](docs/SPRINT_GUIDE.md) — 1-week sprint lifecycle, iteration conventions, and solo-dev DoD
+- `sprint-flow plan` — Sunday backlog grooming, point budgeting (15–20 pts), and iteration setup
+- `sprint-flow retro` — Sunday velocity and completed points inspection
 
 ## Evidence capture conventions
 
