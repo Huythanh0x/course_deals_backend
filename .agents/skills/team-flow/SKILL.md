@@ -13,11 +13,19 @@ Orchestrates a specialized 5-role engineering team across the two Course Deals r
 - **Backend repo**: `/Users/thanh0x/StudioProjects/course_deals_backend` (`Huythanh0x/course_deals_backend`)
 - **Android / KMP repo**: `/Users/thanh0x/StudioProjects/course_deals_ComposeMultiplatform` (`Huythanh0x/course_deals_ComposeMultiplatform`)
 
-Unlike `ticket-flow` (which runs sequentially with multiple manual stops), `team-flow` eliminates unnecessary task blocking through parallel execution:
-1. **Parallel Engineering**: `backend-engineer` and `android-engineer` work simultaneously against the locked DTO/API contract.
-2. **Parallel Review & Backend QA**: As soon as code is committed, `security-arch-reviewer` audits the codebase in parallel with `qa-release-engineer` running local Backend verification (`curl -i`) and shipping the Backend PR.
-3. **Gated Mobile Live E2E**: Android emulator testing (`emulator-5554` + Cloudflare R2 screenshot upload) triggers as soon as the Backend is running and verified locally (ready for API integration) and Android code is ready.
-4. **Only 2 Human Checkpoints**: Checkpoint 1 (Spec & Contract Approval) and Checkpoint 2 (Ready to Merge).
+## ⚡ The Golden Invariant: Clarify ➔ Ticket ➔ Implement
+
+When the user gives a general or raw requirement (e.g. "Add Course Reports", "Offline Bookmarks", "Push Notifications"):
+1. **NEVER start writing code or launching engineer subagents directly.**
+2. **Clarify First (Pre-Planning via `spec-research`)**:
+   - Run ambiguity triage across UX, Data/State, Security, and Edge Cases.
+   - Use `ask_question` to resolve architectural forks and product ambiguities with the user.
+   - Run competitive/best-practice research (`search_web`) if needed.
+3. **Publish to GitHub Issue(s) & Initialize Workspace (`NOTES.md`)**:
+   - Create parent issue and sub-issues on GitHub containing the locked API contract, architecture, and Definition of Done matrix.
+   - Checkout branches `<type>/<issue-number>-<slug>`.
+4. **Implement in Parallel**:
+   - Only AFTER the issue is live and approved, launch `backend-engineer` and `android-engineer` subagents in parallel.
 
 ---
 
@@ -100,9 +108,14 @@ Do **not** proceed to Phase 2 until the user approves.
 
 ## Phase 2: Ticket & Workspace Setup (Main Agent)
 
+> [!CRITICAL]
+> **HARD PREREQUISITE GATE FOR PHASE 3**:
+> Under NO circumstances should `backend-engineer` or `android-engineer` subagents be defined or invoked before this phase is 100% complete!
+> Every task MUST have an active GitHub Issue published with the full spec/API contract and confirmed issue URL, plus local `NOTES.md` initialized.
+
 Once approved at Checkpoint 1:
 
-1. **Create GitHub Issue(s) & Branches** (skip issue creation if the user provided existing issue number(s)):
+1. **Create GitHub Issue(s) & Branches** (skip issue creation ONLY if the user provided existing issue number(s)):
    - Follow `new-ticket` and `create-sub-issues` in the target repo(s):
      - Top-level issue: `gh issue create -R Huythanh0x/<repo> --title "..." --label "type: ..." --label "priority: ..." --label "area: ..." --label "size: ..." --project "Course Deals" --body "..."`
      - Sub-issues (for full-stack parent + child issues): create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform`, link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
