@@ -26,6 +26,7 @@ class UserEntity(
     var id: Int = 0,
     @Column(unique = true, nullable = false)
     var username: String = "",
+    var password: String? = null,
     var fullName: String? = null,
     @Column(unique = true)
     var email: String? = null,

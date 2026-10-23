@@ -41,6 +41,7 @@ class SocialAuthServiceTest {
     fun setUp() {
         val dummyUser = UserEntity()
         `when`(userSessionService.createSession(nonNullAny(dummyUser))).thenReturn("mock-session-id")
+        `when`(userSessionService.createRefreshToken("mock-session-id")).thenReturn("mock-refresh-token")
         `when`(tokenProvider.createToken(nonNullAny(dummyUser), ArgumentMatchers.any())).thenReturn("signed-jwt-token")
         `when`(userRepository.save(nonNullAny(dummyUser))).thenAnswer { it.arguments[0] }
     }

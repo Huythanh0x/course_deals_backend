@@ -7,4 +7,5 @@ enum class AuthProvider {
     GOOGLE,
     APPLE,
     PASSKEY,
+    EMAIL,
 }

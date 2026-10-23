@@ -5,6 +5,7 @@ package com.thanh0x.coursedeal.dto
  */
 data class AuthResponseDTO(
     val accessToken: String? = null,
+    val refreshToken: String? = null,
     val tokenType: String? = null,
     val expiresIn: String = "3600",
 )

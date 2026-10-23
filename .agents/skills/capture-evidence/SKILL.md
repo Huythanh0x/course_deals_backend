@@ -1,52 +1,65 @@
 ---
 name: capture-evidence
-description: Capture committed API verification test scripts, service logs, and deterministic evidence matching the ticket's concrete Definition of Done (DoD).
+description: Capture multi-state UI screenshots, live emulator verification, and deterministic evidence mapped 1:1 against the ticket's concrete Definition of Done (DoD).
 ---
 
 # Capture Evidence & Deterministic Verification
 
-Verification must be reproducible, committed to version control, and mapped directly against the ticket's Definition of Done (DoD) matrix.
+Verification must be multi-state, deterministic, and mapped directly against the ticket's Definition of Done (DoD) matrix.
 
 ---
 
-## 1. Backend Verification: Committed Executable Test Harness
+## 1. Multi-State UI Verification (Avoid Blind Screenshots)
 
-For all REST API or backend changes, do **NOT** rely solely on ephemeral terminal copy-pasting.
+A single arbitrary screenshot is insufficient. Verification requires capturing evidence across multiple discrete states defined in the DoD:
 
-1. Create a reproducible bash test script at `scripts/test-api/<issue-number>-<slug>.sh` (executable via `chmod +x`).
-2. The script must:
-   - Spin up or check local dependencies (`curl -s http://localhost:8080/actuator/health`).
-   - Execute tests for each item in the ticket's DoD matrix (happy path, boundary conditions, invalid inputs, auth errors).
-   - Assert HTTP status codes explicitly (e.g. `[[ "$status" == "200" ]] || exit 1`).
-   - Validate response fields using `jq`.
-   - Print clear PASS / FAIL output and exit with code 0 on complete success.
-3. Commit this script into version control as part of the PR branch under `scripts/test-api/`.
-4. Run the script and record its verbatim standard output in `.agents/tickets/<issue-number>-<slug>/NOTES.md` under `## Test evidence`.
+1. **State 1: Initial / Empty State** (e.g. no items found, first-time user prompt).
+2. **State 2: Populated / Success State** (with live data populated from the running local backend or mock server).
+3. **State 3: Error / Offline / Boundary State** (e.g. network failure retry banner, validation error state).
 
 ---
 
-## 2. Background Crawlers & JobRunr Verification
+## 2. Mandatory Visual Pixel Inspection (`read_file`) & Integrity Policy
 
-For crawler or background job tickets:
-1. Trigger the background job via test controller or CLI.
-2. Query and assert database state in MySQL (e.g. `SELECT id, status, external_url FROM coupon_deals WHERE ...`).
-3. Verify Redis keys and JobRunr dashboard / database records.
-4. Record exact SQL outputs and application logs under `## Test evidence`.
+> [!IMPORTANT]
+> **Strict Zero-Assumption & Mandatory Pixel Inspection Policy**:
+> 1. **Visual Pixel Inspection via `read_file`**: After capturing any screenshot via `screencap`, agents **MUST invoke `read_file`** on the `.png` image path to view and inspect actual pixels. Never claim a UI state is verified, rendered, or error-free without inspecting the image first.
+> 2. **Catch Rendering / Connection Errors**: Verify that the screenshot actually displays the expected UI state (e.g. proper controls, populated list, or expected error dialog) rather than an unhandled connection crash, raw stacktrace, or missing view.
+> 3. **Document Technical Constraints as Separate PR Comments**: If a specific UI state or activity cannot be driven or captured on device due to an operating system or platform technical constraint (e.g. non-exported activity without deeplink, biometric hardware limitation), **do NOT fabricate or claim visual verification**. Instead, document the exact technical constraint, steps attempted, and root cause in a separate, dedicated comment on the PR.
 
 ---
 
-## 3. DoD Mapping Table in PR
+## 3. Emulator Capture & Cloudflare R2 Upload
 
-Map every captured evidence item directly to the ticket's DoD matrix:
+1. Ensure `emulator-5554` is booted and application is installed via `./gradlew installLocalDebug`.
+2. Navigate to target screens using ADB or interactive runner:
+   ```bash
+   adb exec-out screencap -p > .agents/tickets/<issue>-<slug>/evidence/<state-name>.png
+   ```
+3. **Inspect the captured screenshot pixels**:
+   Invoke `read_file` on `.agents/tickets/<issue>-<slug>/evidence/<state-name>.png` and visually verify the rendered contents before uploading.
+4. Upload each captured state to Cloudflare R2:
+   ```bash
+   worker_base="https://r2-image-worker.huythanh0x.workers.dev"
+   response="$(curl -sS -X PUT "${worker_base}/upload" \
+     -u "$R2_IMAGE_UPLOAD_USER:$R2_IMAGE_UPLOAD_TOKEN" \
+     -F "image=@.agents/tickets/<issue>-<slug>/evidence/<state-name>.png")"
+   ```
+5. Extract the direct image URL from the JSON response (`${worker_base}/<filename>`) and verify it returns HTTP 200 (`curl -sS -o /dev/null -w '%{http_code}' "$url"`). Never use `pub-*.r2.dev` bucket URLs.
+
+---
+
+## 4. DoD Mapping Table in PR
+
+Map every captured screenshot and test output directly to the ticket's DoD matrix:
 
 ```markdown
 ### Verification Evidence vs. Definition of Done
-| DoD Criterion | Status | Evidence / Committed Test |
+| DoD Criterion | Status | Evidence / Artifact |
 |---|---|---|
-| Happy Path 200 | PASSED | `scripts/test-api/<issue>.sh` test case 1 |
-| Validation 400 Bad Request | PASSED | `scripts/test-api/<issue>.sh` test case 2 |
-| Flyway Migration Clean | PASSED | `./gradlew test` (SchemaValidationTest) |
-| Detekt / Ktlint Zero Violations | PASSED | `./gradlew ktlintCheck detekt` (0 issues) |
+| Empty State Rendered | PASSED | ![Empty State](https://r2-image-worker.huythanh0x.workers.dev/<hash>.png) |
+| Populated Success State | PASSED | ![Success State](https://r2-image-worker.huythanh0x.workers.dev/<hash>.png) |
+| Network Error / Retry State | PASSED | ![Error State](https://r2-image-worker.huythanh0x.workers.dev/<hash>.png) |
+| Ktlint & Detekt Check | PASSED | `./gradlew ktlintCheck detekt` (0 issues) |
+| Unit & Integration Tests | PASSED | `./gradlew test` (all passed) |
 ```
-
-If screenshots of Swagger UI or administrative dashboards are relevant, upload them to Cloudflare R2 worker and embed the direct markdown links.

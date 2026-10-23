@@ -1,11 +1,14 @@
 package com.thanh0x.coursedeal.security
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
@@ -21,6 +24,10 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
     companion object {
         private const val CORS_PREFLIGHT_MAX_AGE_SECONDS = 3600L
     }
+
+    @Bean
+    @ConditionalOnMissingBean(PasswordEncoder::class)
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
@@ -39,6 +46,7 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     ).authenticated()
                     // Covers public login endpoints: /api/v1/auth/social/login, mock-login, and /api/v1/auth/passkey/**
                     .requestMatchers("/api/v1/auth/**").permitAll()
+                    .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/error").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
