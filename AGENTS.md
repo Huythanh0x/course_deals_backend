@@ -57,9 +57,10 @@ and targeted push notifications.
   - Both combined: `./gradlew ktlintCheck detekt`
 - Run local stack:
   - Infrastructure (MySQL & Redis): `docker compose -f docker-compose.local.yml up -d`
-  - API Service: `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=local'`
+  - Dev API Service (Port 8080): `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=local'`
+  - Stable Mobile-Local API Service (Port 8081, isolated DB & Redis index 1): `bash scripts/bootRunMobileLocal.sh` (or `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=mobile-local'`)
   - Crawler Service: `./gradlew :modules:coupon-crawler-service:bootRun --args='--spring.profiles.active=local'`
-  - Run both services simultaneously: `./gradlew bootRunLocal` (or `bash scripts/bootRunLocal.sh`)
+  - Run both dev services simultaneously: `./gradlew bootRunLocal` (or `bash scripts/bootRunLocal.sh`)
 
 ## Git / GitHub workflow
 
