@@ -1,0 +1,49 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/training_coupon_mobile_local?createDatabaseIfNotExist=true&connectTimeout=10000&socketTimeout=30000&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 2
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+
+jobrunr:
+  background-job-server:
+    enabled: false
+  dashboard:
+    enabled: true
+    port: 8001
+
+logging:
+  level:
+    org.springframework.web: INFO
+
+custom:
+  jwt-expiration: ${CUSTOM_JWT_EXPIRATION:86400000}
+  jwt-secret: ${CUSTOM_JWT_SECRET:local_dev_jwt_secret_key_must_be_at_least_32_characters_long_for_security}
+  mock-auth-enabled: true
+  google-client-id: ${GOOGLE_CLIENT_ID:local-dev-google-client-id.apps.googleusercontent.com}
+  async:
+    scraper:
+      core-pool-size: 5
+      max-pool-size: 10
+      queue-capacity: 100
+
+server:
+  port: 8081
+  address: 0.0.0.0
