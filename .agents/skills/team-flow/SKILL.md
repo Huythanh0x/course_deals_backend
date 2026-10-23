@@ -13,9 +13,11 @@ Orchestrates a specialized 5-role engineering team across the two Course Deals r
 - **Backend repo**: `/Users/thanh0x/StudioProjects/course_deals_backend` (`Huythanh0x/course_deals_backend`)
 - **Android / KMP repo**: `/Users/thanh0x/StudioProjects/course_deals_ComposeMultiplatform` (`Huythanh0x/course_deals_ComposeMultiplatform`)
 
-Unlike `ticket-flow` (which runs 1 agent sequentially with 8 manual stops), `team-flow` delegates specialized work to dedicated subagents in parallel and **only stops at 2 human-in-the-loop checkpoints**:
-1. **Checkpoint 1 — Spec, API Contract & Edge Cases Approval** (before creating issues/branches and spawning coding agents)
-2. **Checkpoint 2 — Ready to Merge** (after coding, cross-repo security/architecture audit, E2E/emulator evidence capture, and PR creation)
+Unlike `ticket-flow` (which runs sequentially with multiple manual stops), `team-flow` eliminates unnecessary task blocking through parallel execution:
+1. **Parallel Engineering**: `backend-engineer` and `android-engineer` work simultaneously against the locked DTO/API contract.
+2. **Parallel Review & Backend QA**: As soon as code is committed, `security-arch-reviewer` audits the codebase in parallel with `qa-release-engineer` running local Backend verification (`curl -i`) and shipping the Backend PR.
+3. **Gated Mobile Live E2E**: Android emulator testing (`emulator-5554` + Cloudflare R2 screenshot upload) triggers as soon as the Backend is running and verified locally (ready for API integration) and Android code is ready.
+4. **Only 2 Human Checkpoints**: Checkpoint 1 (Spec & Contract Approval) and Checkpoint 2 (Ready to Merge).
 
 ---
 
@@ -26,8 +28,33 @@ Unlike `ticket-flow` (which runs 1 agent sequentially with 8 manual stops), `tea
 | **1. PM & Solutions Architect** | Main Agent + `research` subagents | Scans code in parallel, defines cross-repo REST/DTO contract, resolves edge cases, creates GitHub parent/sub-issues & branches, initializes `NOTES.md`. | Built into this `SKILL.md` |
 | **2. Backend Engineer** | `backend-engineer` | Implements Spring Boot / Kotlin / Flyway / JobRunr changes & unit tests in `course_deals_backend`, runs `./gradlew ktlintCheck detekt test`, commits locally. | [references/backend-engineer.md](references/backend-engineer.md) |
 | **3. Android / KMP Engineer** | `android-engineer` | Implements Clean Architecture (Retrofit, Room/DataStore, Hilt, ViewModel `StateFlow`, XML/Compose UI) & unit tests in `course_deals_ComposeMultiplatform`, runs `:app:detekt`, lint, and unit tests, commits locally. | [references/android-engineer.md](references/android-engineer.md) |
-| **4. Security & Arch Reviewer** | `security-arch-reviewer` | Read-only auditor: verifies Backend↔Android DTO JSON contract parity, Android Intent security (`intent-security-review`), KMP readiness (`kmp-readiness`), and ADR criteria (`adr`). | [references/security-arch-reviewer.md](references/security-arch-reviewer.md) |
-| **5. QA & Release Engineer** | `qa-release-engineer` | Runs sequential E2E verification (`docker compose` + `bootRun` + `curl -i` on Backend; `emulator-5554` + Cloudflare R2 screenshot upload on Android) and opens labeled PRs (`ship-pr`). | [references/qa-release-engineer.md](references/qa-release-engineer.md) |
+| **4. Security & Arch Reviewer** | `security-arch-reviewer` | Read-only auditor (runs in parallel with QA): verifies Backend↔Android DTO JSON contract parity, Android Intent security (`intent-security-review`), KMP readiness (`kmp-readiness`), and ADR criteria (`adr`). | [references/security-arch-reviewer.md](references/security-arch-reviewer.md) |
+| **5. QA & Release Engineer** | `qa-release-engineer` | Runs live E2E verification: Backend `curl -i` check locally -> Android `emulator-5554` verification against running local backend + R2 screenshot upload -> opens labeled PRs (`ship-pr`). | [references/qa-release-engineer.md](references/qa-release-engineer.md) |
+
+---
+
+## Execution Workflow Overview
+
+```
+Phase 1: PM & Architect Discovery (Main Agent + parallel research subagents)
+                   │
+         [Checkpoint 1: Spec Approval]
+                   │
+Phase 2: Ticket & Workspace Setup (Branches & NOTES.md)
+                   │
+Phase 3: Parallel Implementation (backend-engineer & android-engineer run simultaneously)
+                   ├───┐
+                   │   │
+Phase 4: Parallel Review & Backend QA
+  • security-arch-reviewer: Audits DTO contract, intent security, KMP readiness
+  • qa-release-engineer (Backend): docker compose up -> bootRun -> curl -i -> ship backend PR
+                   │   │
+                   └───┼───> Phase 5: Gated Mobile Live E2E & Release
+                             (Triggered once BE is verified locally & Android is ready)
+                             emulator-5554 -> installLocalDebug -> R2 upload -> ship Android PR
+                                       │
+                             [Checkpoint 2: Merge Gate]
+```
 
 ---
 
@@ -46,7 +73,7 @@ Unlike `ticket-flow` (which runs 1 agent sequentially with 8 manual stops), `tea
 
 3. **Draft the Spec, API Contract & Edge Cases (`confirm-edge-cases`)**:
    - **Cross-Repo API Contract** (required whenever both repos are involved or an API is touched):
-     - Exact HTTP method & path (e.g., `GET /api/v1/user/profile`)
+     - Exact HTTP method & path (e.g., `POST /api/v1/auth/register`)
      - Request headers/query/body JSON schema & field nullability
      - Response JSON schema, field names, types, nullability, and status codes
    - **Edge Cases**:
@@ -54,8 +81,8 @@ Unlike `ticket-flow` (which runs 1 agent sequentially with 8 manual stops), `tea
      - For genuine product/architectural ambiguities: batch them into a single `ask_question` call before or at Checkpoint 1.
    - **GitHub Issue & Branch Plan**:
      - Propose issue title(s), labels (`type: <x>`, `priority: <P0-P3>`, `area: <backend|android|...>`, `size: <1|2|3|5|8|13>`), and structure:
-       - Single-repo task → 1 top-level issue on `"Course Deals"` board.
-       - Full-stack task → 1 Parent umbrella issue on `"Course Deals"` board + Backend sub-issue (`area: backend`) + Android sub-issue (`area: android`), with sub-issues removed from the board cascade per `create-sub-issues`.
+       - Single-repo task -> 1 top-level issue on `"Course Deals"` board.
+       - Full-stack task -> 1 Parent umbrella issue on `"Course Deals"` board + Backend sub-issue (`area: backend`) + Android sub-issue (`area: android`), with sub-issues removed from the board cascade per `create-sub-issues`.
 
 ---
 
@@ -101,59 +128,52 @@ Once approved at Checkpoint 1:
 
 ## Phase 3: Parallel Engineering Execution (`backend-engineer` + `android-engineer`)
 
-Read the reference prompt(s) for the needed engineer role(s):
+Read reference prompt(s):
 - Backend: [references/backend-engineer.md](references/backend-engineer.md)
 - Android/KMP: [references/android-engineer.md](references/android-engineer.md)
 
-1. **Define the Subagent(s)** using `define_subagent`:
-   - `Name`: `"backend-engineer"` and/or `"android-engineer"`
-   - `EnableWriteTools`: `true`
-   - `SystemPrompt`: Use the system prompt from the corresponding reference file.
-2. **Invoke in Parallel** using `invoke_subagent`:
-   - If the task is Full-Stack, call `invoke_subagent` for `backend-engineer` and `android-engineer` **in the same turn** so both repositories are implemented and unit-tested simultaneously against the locked API Contract.
-   - Pass each subagent:
-     - Repository path and active branch name
-     - Ticket workspace path (`.agents/tickets/<issue-number>-<slug>/NOTES.md`)
-     - Exact API Contract and acceptance criteria
-   - Wait for both subagents to complete and report their local commit hashes and unit test results.
+1. **Define Subagents** using `define_subagent` (`Name: "backend-engineer"` and `Name: "android-engineer"`, both with `EnableWriteTools: true`).
+2. **Invoke Simultaneously**:
+   - Invoke both subagents **in the same turn**.
+   - Both engineers implement their domain and run their unit tests/linters independently against the locked contract.
+   - Subagents commit their changes locally to their respective branches and report commit hashes and test results back.
 
 ---
 
-## Phase 4: Automated Security & Architecture Review (`security-arch-reviewer`)
+## Phase 4: Parallel Review & Backend Local QA
 
-Read [references/security-arch-reviewer.md](references/security-arch-reviewer.md).
-
-1. **Define & Invoke `security-arch-reviewer`**:
-   - Call `define_subagent` with `Name: "security-arch-reviewer"`, `EnableWriteTools: false` (strictly read-only auditor).
-   - Call `invoke_subagent` passing the repo path(s), branch name(s), `NOTES.md` path(s), and commit hash(es).
-2. **Handle Review Verdict**:
-   - The reviewer checks:
-     1. **Cross-repo DTO/Endpoint parity** (field names, `@SerializedName`/`@JsonProperty`, nullability, HTTP methods/paths)
-     2. **Android Intent security** (`AndroidManifest.xml` exported components, `getIntent()` extras sanitization, `PendingIntent.FLAG_IMMUTABLE`)
-     3. **KMP readiness** (no unnecessary Android-only imports in `domain:*` or `data:*`)
-     4. **ADR & code hygiene** (no stray debug logs, Flyway migration consistency, whether an ADR is needed)
-   - If verdict is **`NEEDS_FIX`**: send the reviewer's exact findings back to `backend-engineer` and/or `android-engineer` via `send_message`, let them fix and amend/commit + re-run tests, and re-verify before proceeding.
-   - If verdict is **`PASS`**: proceed immediately to Phase 5 without stopping for user input.
+As soon as commits are ready:
+1. **Parallel Audit (`security-arch-reviewer`)**:
+   - Defined with `EnableWriteTools: false`. Runs in parallel with QA.
+   - Inspects cross-repo DTO contract parity, Android Intent security (`intent-security-review`), KMP readiness (`kmp-readiness`), and Flyway/ADR hygiene.
+   - If verdict is `NEEDS_FIX`: fixes are routed back to the appropriate engineer immediately.
+2. **Backend Local E2E & PR (`qa-release-engineer`)**:
+   - If Backend has changes: starts local dependencies (`docker compose up -d`), runs Spring Boot application with `--spring.profiles.active=local`.
+   - Executes live `curl -i` requests against the new endpoints, logs response in `NOTES.md`.
+   - Pushes backend branch and creates Backend PR with mirrored labels.
+   - **Signals that Backend is ready for local API integration**.
 
 ---
 
-## Phase 5: Sequential E2E QA, Evidence Capture & PR Shipping (`qa-release-engineer`)
+## Phase 5: Gated Mobile Live E2E & Release (`qa-release-engineer`)
 
-Read [references/qa-release-engineer.md](references/qa-release-engineer.md).
-
-1. **Define & Invoke `qa-release-engineer`**:
-   - Call `define_subagent` with `Name: "qa-release-engineer"`, `EnableWriteTools: true`.
-   - Call `invoke_subagent` passing the repo path(s), branch name(s), issue number(s), and `NOTES.md` path(s).
-2. **What `qa-release-engineer` executes**:
-   - **Backend E2E (`course_deals_backend`)**: Starts local infra if needed, verifies endpoints via `curl -i` (or integration tests), records real HTTP responses in `NOTES.md`.
-   - **Android E2E (`course_deals_ComposeMultiplatform`)**: Installs `localDebug` on `emulator-5554` (against local backend if full-stack), captures screenshots into `.agents/tickets/<N>-<slug>/evidence/`, uploads key screenshots to Cloudflare R2 (`https://r2-image-worker.huythanh0x.workers.dev/upload`), verifies 200 OK, and records markdown image URLs in `NOTES.md`.
-   - **Ship PR (`ship-pr`)**: Pushes branch(es), creates PR(s) from `.github/PULL_REQUEST_TEMPLATE.md` with `Closes #<N>`, real test counts, `curl` outputs, and R2 screenshots, and mirrors issue labels onto the PR(s).
+If `course_deals_ComposeMultiplatform` was modified:
+1. **Gate Check**: Triggers only when:
+   - Android engineering implementation is complete (`android-engineer` committed).
+   - Backend local server is running and verified locally via `curl -i` (ready for live API integration).
+2. **Live Mobile Verification**:
+   - Checks `adb devices` for `emulator-5554`.
+   - Runs `./gradlew installLocalDebug`.
+   - Drives UI to target flows, capturing screenshots into `.agents/tickets/<N>-<slug>/evidence/`.
+   - Uploads 1-3 key screenshots to Cloudflare R2 (`https://r2-image-worker.huythanh0x.workers.dev/upload`), verifies 200 OK, and embeds markdown URLs in `NOTES.md`.
+3. **Ship Android PR**:
+   - Pushes Android branch and opens PR from `.github/PULL_REQUEST_TEMPLATE.md` with test evidence, R2 screenshots, and mirrored issue labels.
 
 ---
 
 ## Checkpoint 2: Ready to Merge Gate (Stop #2)
 
-Once `qa-release-engineer` reports back with the opened PR URL(s):
+Once `qa-release-engineer` reports back with the opened PR URL(s) and `security-arch-reviewer` passes:
 
 1. Present the **Team Delivery Report**:
    - **PR URL(s)** & Branch(es)
