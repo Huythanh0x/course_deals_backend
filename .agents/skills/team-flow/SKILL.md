@@ -13,11 +13,19 @@ Orchestrates a specialized 5-role engineering team across the two Course Deals r
 - **Backend repo**: `/Users/thanh0x/StudioProjects/course_deals_backend` (`Huythanh0x/course_deals_backend`)
 - **Android / KMP repo**: `/Users/thanh0x/StudioProjects/course_deals_ComposeMultiplatform` (`Huythanh0x/course_deals_ComposeMultiplatform`)
 
-Unlike `ticket-flow` (which runs sequentially with multiple manual stops), `team-flow` eliminates unnecessary task blocking through parallel execution:
-1. **Parallel Engineering**: `backend-engineer` and `android-engineer` work simultaneously against the locked DTO/API contract.
-2. **Parallel Review & Backend QA**: As soon as code is committed, `security-arch-reviewer` audits the codebase in parallel with `qa-release-engineer` running local Backend verification (`curl -i`) and shipping the Backend PR.
-3. **Gated Mobile Live E2E**: Android emulator testing (`emulator-5554` + Cloudflare R2 screenshot upload) triggers as soon as the Backend is running and verified locally (ready for API integration) and Android code is ready.
-4. **Only 2 Human Checkpoints**: Checkpoint 1 (Spec & Contract Approval) and Checkpoint 2 (Ready to Merge).
+## ⚡ The Golden Invariant: Clarify ➔ Ticket ➔ Implement
+
+When the user gives a general or raw requirement (e.g. "Add Course Reports", "Offline Bookmarks", "Push Notifications"):
+1. **NEVER start writing code or launching engineer subagents directly.**
+2. **Clarify First (Pre-Planning via `spec-research`)**:
+   - Run ambiguity triage across UX, Data/State, Security, and Edge Cases.
+   - Use `ask_question` to resolve architectural forks and product ambiguities with the user.
+   - Run competitive/best-practice research (`search_web`) if needed.
+3. **Publish to GitHub Issue(s) & Initialize Workspace (`NOTES.md`)**:
+   - Create parent issue and sub-issues on GitHub containing the locked API contract, architecture, and Definition of Done matrix.
+   - Checkout branches `<type>/<issue-number>-<slug>`.
+4. **Implement in Parallel**:
+   - Only AFTER the issue is live and approved, launch `backend-engineer` and `android-engineer` subagents in parallel.
 
 ---
 
