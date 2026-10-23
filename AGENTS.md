@@ -77,6 +77,11 @@ The `ticket-flow` skill runs the full lifecycle as a gated single-agent sequence
 
 The `team-flow` skill runs the same lifecycle using a **5-agent specialized team** across `course_deals_backend` and `course_deals_ComposeMultiplatform` (**PM/Architect**, `backend-engineer`, `android-engineer`, `security-arch-reviewer`, and `qa-release-engineer`) with only **2 human-in-the-loop checkpoints** (1: Approve Spec, API Contract & Edge Cases; 2: Ready to Merge PRs).
 
+The `sprint-flow` skill manages the **1-week solo developer sprint rhythm** (Monday–Saturday build & test, Sunday stop & plan) integrated with GitHub Projects:
+- [`docs/SPRINT_GUIDE.md`](docs/SPRINT_GUIDE.md) — 1-week sprint lifecycle, iteration conventions, and solo-dev DoD
+- `sprint-flow plan` — Sunday backlog grooming, point budgeting (15–20 pts), and iteration setup
+- `sprint-flow retro` — Sunday velocity and completed points inspection
+
 ## Evidence capture conventions
 
 For backend changes, automated and manual verification includes:
