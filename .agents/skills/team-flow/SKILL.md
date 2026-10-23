@@ -60,29 +60,24 @@ Phase 4: Parallel Review & Backend QA
 
 ## Phase 1: PM & Architect Discovery (Main Agent)
 
-1. **Determine Repository Scope**:
-   - **Backend-only**: touches only `/Users/thanh0x/StudioProjects/course_deals_backend`
-   - **Android/KMP-only**: touches only `/Users/thanh0x/StudioProjects/course_deals_ComposeMultiplatform`
-   - **Full-Stack (Cross-Repo)**: touches both repositories (e.g., new or updated API endpoint + client integration)
+1. **Determine Repository Scope & Task Type**:
+   - Scope: Backend-only, Android/KMP-only, or Full-Stack (Cross-Repo).
+   - Task Type: **Bug** vs. **Feature / Chore**.
 
-2. **Parallel Codebase Research (`scan-related-code`)**:
-   - Invoke `invoke_subagent` with `TypeName: "research"` in parallel (one subagent per target repo) to:
-     - Read the target repo's `AGENTS.md` (and existing GitHub issue if the user gave an issue `#N`).
-     - Identify exact modules, files, entities, DTOs, ViewModels, or controllers impacted.
-     - Identify existing patterns and potential edge cases.
+2. **Differentiated Discovery Protocol**:
+   - **For Bugs (`type: bug`) — SWE-Bench Reproduction Protocol**:
+     - Construct a reproduction script or failing test (`FAIL_TO_PASS` pattern).
+     - Run on unmodified codebase to confirm reproduction.
+     - Document Root Cause Analysis (RCA) comment on the GitHub issue before writing fix code.
+   - **For Features (`type: feat` / `type: chore`) — Spec-Driven Development (SDD)**:
+     - Clarify common-sense boundaries (empty states, errors, timeouts).
+     - Conduct industry web research for reference patterns.
+     - Formulate Architecture & Tradeoff RFC spike.
 
-3. **Draft the Spec, API Contract & Edge Cases (`confirm-edge-cases`)**:
-   - **Cross-Repo API Contract** (required whenever both repos are involved or an API is touched):
-     - Exact HTTP method & path (e.g., `POST /api/v1/auth/register`)
-     - Request headers/query/body JSON schema & field nullability
-     - Response JSON schema, field names, types, nullability, and status codes
-   - **Edge Cases**:
-     - For low-risk items with an obvious repo-consistent default: decide and record the default directly.
-     - For genuine product/architectural ambiguities: batch them into a single `ask_question` call before or at Checkpoint 1.
-   - **GitHub Issue & Branch Plan**:
-     - Propose issue title(s), labels (`type: <x>`, `priority: <P0-P3>`, `area: <backend|android|...>`, `size: <1|2|3|5|8|13>`), and structure:
-       - Single-repo task -> 1 top-level issue on `"Course Deals"` board.
-       - Full-stack task -> 1 Parent umbrella issue on `"Course Deals"` board + Backend sub-issue (`area: backend`) + Android sub-issue (`area: android`), with sub-issues removed from the board cascade per `create-sub-issues`.
+3. **Draft the Spec, Cross-Repo API Contract & Concrete DoD Matrix**:
+   - **Cross-Repo API Contract** (REST path, HTTP verbs, request/response JSON schema, nullability, HTTP status codes).
+   - **Concrete DoD Matrix**: Explicit verifiable criteria for happy path, error paths, migrations, and detekt checks.
+   - **Issue Plan**: Propose issue titles, labels, and parent/sub-issue structure.
 
 ---
 
@@ -147,9 +142,10 @@ As soon as commits are ready:
    - Defined with `EnableWriteTools: false`. Runs in parallel with QA.
    - Inspects cross-repo DTO contract parity, Android Intent security (`intent-security-review`), KMP readiness (`kmp-readiness`), and Flyway/ADR hygiene.
    - If verdict is `NEEDS_FIX`: fixes are routed back to the appropriate engineer immediately.
-2. **Backend Local E2E & PR (`qa-release-engineer`)**:
+2. **Backend Local E2E & Committed Test Harness (`qa-release-engineer`)**:
    - If Backend has changes: starts local dependencies (`docker compose up -d`), runs Spring Boot application with `--spring.profiles.active=local`.
-   - Executes live `curl -i` requests against the new endpoints, logs response in `NOTES.md`.
+   - **Generates & commits executable test script** at `scripts/test-api/<issue>-<slug>.sh` asserting HTTP status codes and `jq` body schemas against the ticket's DoD matrix.
+   - Executes the script, capturing output directly into the PR body.
    - Pushes backend branch and creates Backend PR with mirrored labels.
    - **Signals that Backend is ready for local API integration**.
 
@@ -160,14 +156,14 @@ As soon as commits are ready:
 If `course_deals_ComposeMultiplatform` was modified:
 1. **Gate Check**: Triggers only when:
    - Android engineering implementation is complete (`android-engineer` committed).
-   - Backend local server is running and verified locally via `curl -i` (ready for live API integration).
-2. **Live Mobile Verification**:
+   - Backend local server is running and verified locally via committed test script (ready for live API integration).
+2. **Live Mobile Verification & Multi-State Capture**:
    - Checks `adb devices` for `emulator-5554`.
    - Runs `./gradlew installLocalDebug`.
-   - Drives UI to target flows, capturing screenshots into `.agents/tickets/<N>-<slug>/evidence/`.
-   - Uploads 1-3 key screenshots to Cloudflare R2 (`https://r2-image-worker.huythanh0x.workers.dev/upload`), verifies 200 OK, and embeds markdown URLs in `NOTES.md`.
+   - Captures multi-state UI evidence matching the DoD matrix (Empty, Success, Error states).
+   - Uploads screenshots to Cloudflare R2 (`https://r2-image-worker.huythanh0x.workers.dev/upload`), verifies 200 OK, and embeds markdown URLs mapped directly to the DoD table in `NOTES.md`.
 3. **Ship Android PR**:
-   - Pushes Android branch and opens PR from `.github/PULL_REQUEST_TEMPLATE.md` with test evidence, R2 screenshots, and mirrored issue labels.
+   - Pushes Android branch and opens PR from `.github/PULL_REQUEST_TEMPLATE.md` with test evidence, R2 screenshots mapped to DoD, and mirrored issue labels.
 
 ---
 
