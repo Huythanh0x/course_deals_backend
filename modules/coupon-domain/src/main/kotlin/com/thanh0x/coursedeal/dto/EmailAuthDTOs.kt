@@ -27,6 +27,15 @@ data class RegisterResponseDTO(
 )
 
 /**
+ * Request DTO for passwordless OTP dispatch.
+ */
+data class SendOtpRequestDTO(
+    @field:NotBlank(message = "Email is required")
+    @field:Email(message = "Invalid email format")
+    val email: String = "",
+)
+
+/**
  * Request DTO for verifying email registration OTP.
  */
 data class VerifyOtpRequestDTO(

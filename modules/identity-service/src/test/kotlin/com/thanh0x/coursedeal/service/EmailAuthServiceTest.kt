@@ -5,6 +5,7 @@ import com.thanh0x.coursedeal.config.IdentityProperties
 import com.thanh0x.coursedeal.dto.EmailLoginRequestDTO
 import com.thanh0x.coursedeal.dto.RefreshTokenRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterRequestDTO
+import com.thanh0x.coursedeal.dto.SendOtpRequestDTO
 import com.thanh0x.coursedeal.dto.VerifyOtpRequestDTO
 import com.thanh0x.coursedeal.exception.BadRequestException
 import com.thanh0x.coursedeal.exception.ConflictException
@@ -96,6 +97,30 @@ class EmailAuthServiceTest {
     }
 
     @Test
+    fun `sendOtp stores pending registration with 000000 OTP regardless of user existence`() {
+        val response =
+            service.sendOtp(
+                SendOtpRequestDTO(
+                    email = "  passwordless@example.com ",
+                ),
+            )
+
+        assertEquals("OTP sent to email", response.message)
+        assertEquals("passwordless@example.com", response.email)
+        assertEquals(86400L, response.expiresInSeconds)
+
+        val jsonCaptor = ArgumentCaptor.forClass(String::class.java)
+        verify(valueOperations).set(
+            eq("auth:otp:passwordless@example.com"),
+            jsonCaptor.capture(),
+            eq(Duration.ofHours(24)),
+        )
+        val stored = objectMapper.readValue(jsonCaptor.value, EmailAuthService.PendingRegistration::class.java)
+        assertEquals("000000", stored.otp)
+        assertEquals("passwordless@example.com", stored.email)
+    }
+
+    @Test
     fun `register throws ConflictException when email is already registered`() {
         `when`(userRepository.existsByEmail("existing@example.com")).thenReturn(true)
 
@@ -135,7 +160,43 @@ class EmailAuthServiceTest {
         assertEquals("refresh-123", response.refreshToken)
         assertEquals("Bearer", response.tokenType)
         assertEquals("3600", response.expiresIn)
+        assertEquals(true, response.isNewUser)
         verify(redisTemplate).delete("auth:otp:student@example.com")
+    }
+
+    @Test
+    fun `verifyOtp with existing user returns isNewUser false and preserves user`() {
+        val pending =
+            EmailAuthService.PendingRegistration(
+                email = "existing@example.com",
+                otp = "000000",
+            )
+        val existing =
+            UserEntity(
+                id = 99,
+                username = "existing@example.com",
+                email = "existing@example.com",
+                fullName = "Existing User",
+            )
+        `when`(valueOperations.get("auth:otp:existing@example.com"))
+            .thenReturn(objectMapper.writeValueAsString(pending))
+        `when`(userRepository.findByEmail("existing@example.com")).thenReturn(existing)
+
+        val response =
+            service.verifyOtp(
+                VerifyOtpRequestDTO(
+                    email = "existing@example.com",
+                    otp = "000000",
+                    fcmToken = "updated-fcm",
+                ),
+            )
+
+        assertEquals("jwt-access-123", response.accessToken)
+        assertEquals("refresh-123", response.refreshToken)
+        assertEquals(false, response.isNewUser)
+        assertEquals("updated-fcm", existing.fcmToken)
+        verify(userRepository).save(existing)
+        verify(redisTemplate).delete("auth:otp:existing@example.com")
     }
 
     @Test
