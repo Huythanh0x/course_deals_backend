@@ -48,8 +48,11 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     .requestMatchers("/api/v1/auth/**").permitAll()
                     .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                    .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers("/error").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/courses/*/reports").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/reports").permitAll()
                     // /api/v1/preferences is intentionally NOT listed here: it's per-user data
                     // and must fall through to anyRequest().authenticated() below.
                     .anyRequest().authenticated()
