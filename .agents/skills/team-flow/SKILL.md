@@ -117,8 +117,11 @@ Once approved at Checkpoint 1:
 
 1. **Create GitHub Issue(s) & Branches** (skip issue creation ONLY if the user provided existing issue number(s)):
    - Follow `new-ticket` and `create-sub-issues` in the target repo(s):
-     - Top-level issue: `gh issue create -R Huythanh0x/<repo> --title "..." --label "type: ..." --label "priority: ..." --label "area: ..." --label "size: ..." --project "Course Deals" --body "..."`
-     - Sub-issues (for full-stack parent + child issues): create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform`, link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
+     - **Top-level feature issue**: MUST be added to GitHub Project [`Course Deals`](https://github.com/users/Huythanh0x/projects/4) (`--project "Course Deals"`). The issue body MUST include the **solution architecture plan** (problem & motivation, cross-repo architecture flow, API/DTO contract, and DoD matrix).
+       ```bash
+       gh issue create -R Huythanh0x/<repo> --title "..." --label "type: ..." --label "priority: ..." --label "area: ..." --label "size: ..." --project "Course Deals" --body "..."
+       ```
+     - **Sub-issues (for full-stack parent + child issues)**: Create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform` (or target repos). Each sub-issue body **MUST** specify its own concrete, domain-specific architecture and tech stack details (e.g. Spring Boot/Flyway/JPA/JobRunr for BE; Jetpack Compose/Clean Architecture/Hilt/Coroutines for App). Link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
    - In each target repo, checkout latest `main`, pull, and create the branch `<type>/<issue-number>-<slug>`:
      ```bash
      git -C <repo-path> checkout main && git -C <repo-path> pull origin main

@@ -12,14 +12,18 @@ flow this repo's own docs prescribe.
 
 1. **Pick the type** from the user's request: `feature`, `bug`, `chore`, `docs`,
    `refactor`, `test`, or `design`. If unclear, ask.
-2. **Write the issue body** using the shape from `.github/ISSUE_TEMPLATE/bug_report.md`
-   or `.github/ISSUE_TEMPLATE/feature_request.md` (whichever fits) — keep the same
-   sections even for other types (what/why, environment/module, definition of done).
-   **Describe only the observed problem, not a solution you've already worked out** —
-   even if you (the assistant) already diagnosed the root cause or have a fix ready in
-   this same session, the issue is the problem statement; investigation and the fix
-   belong in the PR that closes it. An issue that already states "root cause is X, fix
-   is Y" reads as pre-solved and duplicates what the PR description should say.
+2. **Write the issue body**:
+   - For **`feature` issues**:
+     - **Mandatory Project**: Must be tracked under GitHub Project [`Course Deals`](https://github.com/users/Huythanh0x/projects/4) (`--project "Course Deals"`).
+     - **Solution Architecture Plan**: Top-level feature issues must include an explicit architecture plan covering:
+       - Problem statement & core motivation.
+       - System architecture diagram / component flow across repos (Backend & Android/KMP).
+       - API / DTO contract specification (endpoints, request/response models, error handling).
+       - Definition of Done (DoD) verification matrix.
+     - **Sub-Issues Breakdown**: For full-stack or multi-component features, generate corresponding sub-issues for each domain (e.g. Mobile and Backend) containing their own detailed architecture & tech stack design (see `create-sub-issues`).
+   - For **`bug` issues**:
+     - Focus on observed vs expected behavior, reproduction steps, environment/logs.
+   - Use `.github/ISSUE_TEMPLATE/bug_report.md` or `.github/ISSUE_TEMPLATE/feature_request.md` structure.
 3. **Pick labels**, exactly one from each category (see `docs/project-management.md`
    for the full taxonomy):
    - `type: <feature|bug|chore|docs|refactor|test|design>`
@@ -34,7 +38,7 @@ flow this repo's own docs prescribe.
    or you're splitting an oversized issue per the `size: 13` guidance), this is a
    sub-issue. Ask if it's ambiguous rather than guessing.
 5. **Create the issue**:
-   - **Top-level** — add it to the board at creation, no separate step needed:
+   - **Top-level** — add it to the project board at creation (mandatory for features):
      ```bash
      gh issue create -R Huythanh0x/course_deals_backend \
        --title "<title>" \
@@ -42,28 +46,9 @@ flow this repo's own docs prescribe.
        --project "Course Deals" \
        --body "<body>"
      ```
-   - **Sub-issue** — link it under its parent, and deliberately **omit `--project`**
-     (adding a sub-issue to the board separately from its parent defeats the point of
-     grouping — only the parent should represent the work there):
-     ```bash
-     gh issue create -R Huythanh0x/course_deals_backend \
-       --title "<title>" \
-       --label "type: <x>" --label "priority: <x>" --label "area: <x>" --label "size: <x>" \
-       --parent <parent-issue-number> \
-       --body "<body>"
-     ```
-     GitHub auto-cascades a new sub-issue onto the project board anyway if its parent is
-     already a board item, regardless of the `--project` flag. Check for this and remove
-     it if it happened:
-     ```bash
-     NUM="$(gh project list --owner Huythanh0x --format json -q '.projects[] | select(.title=="Course Deals") | .number')"
-     ITEM_ID="$(gh api graphql -f query='
-       query($num: Int!) { user(login: "Huythanh0x") { projectV2(number: $num) { items(first: 100) {
-         nodes { id content { ... on Issue { number repository { name } } } } } } } }' \
-       -F num="$NUM" \
-       -q ".data.user.projectV2.items.nodes[] | select(.content.repository.name == \"course_deals_backend\" and .content.number == <new-issue-number>) | .id")"
-     [ -n "$ITEM_ID" ] && gh project item-delete "$NUM" --owner Huythanh0x --id "$ITEM_ID"
-     ```
+   - **Sub-issue** — hand off to the `create-sub-issues` skill for the actual creation
+     (`--parent`, deliberately no `--project`, including detailed tech stack architecture)
+     and the board auto-cascade cleanup it documents — don't duplicate those mechanics here.
 6. **Create the branch** off the latest `main`, per `docs/branching.md`'s naming
    convention `<type>/<issue-number>-<short-slug>`:
    ```bash
@@ -81,8 +66,9 @@ flow this repo's own docs prescribe.
   real judgment call (priority, size) rather than assuming.
 - `gh issue create --project`/`--parent` requires the `project` scope on the
   authenticated `gh` token (`gh auth refresh -s project` if missing).
+- Project URL: [Course Deals Project #4](https://github.com/users/Huythanh0x/projects/4).
 - Sub-issues are intentionally excluded from the board — only their parent represents
-  the work there. This mirrors the manual cleanup done when the board was first
-  backfilled (see `docs/project-board.md`).
-- This skill's shape mirrors `course_deals_ComposeMultiplatform`'s `new-ticket` skill —
-  keep them in sync if either changes (e.g. board mechanics, label taxonomy).
+  the work there. See `create-sub-issues` for the full mechanics, including attaching
+  an issue that already existed before its parent did.
+- If 2+ of the issues being filed here are independent enough to implement in parallel,
+  consider `dispatch-ticket-worktree` once their branches exist.
