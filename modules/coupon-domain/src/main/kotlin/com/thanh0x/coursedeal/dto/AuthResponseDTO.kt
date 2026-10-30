@@ -8,4 +8,5 @@ data class AuthResponseDTO(
     val refreshToken: String? = null,
     val tokenType: String? = null,
     val expiresIn: String = "3600",
+    val isNewUser: Boolean = false,
 )

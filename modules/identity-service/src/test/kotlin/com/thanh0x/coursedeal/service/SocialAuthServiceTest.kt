@@ -61,7 +61,26 @@ class SocialAuthServiceTest {
         assertNotNull(response)
         assertEquals("signed-jwt-token", response.accessToken)
         assertEquals("Bearer", response.tokenType)
+        assertEquals(true, response.isNewUser)
         verify(userRepository).save(nonNullAny(UserEntity()))
+    }
+
+    @Test
+    fun `login with existing user returns isNewUser false`() {
+        properties.mockAuthEnabled = true
+        val existing = UserEntity(id = 10, email = "existing@example.com")
+        `when`(userRepository.findByEmail("existing@example.com")).thenReturn(existing)
+
+        val request =
+            SocialLoginRequestDTO(
+                provider = AuthProvider.GOOGLE,
+                idToken = "mock-existing@example.com",
+            )
+
+        val response = service.login(request)
+
+        assertNotNull(response)
+        assertEquals(false, response.isNewUser)
     }
 
     @Test
@@ -94,6 +113,7 @@ class SocialAuthServiceTest {
         assertNotNull(response)
         assertEquals("signed-jwt-token", response.accessToken)
         assertEquals("Bearer", response.tokenType)
+        assertEquals(true, response.isNewUser)
         verify(userRepository).save(nonNullAny(UserEntity()))
     }
 

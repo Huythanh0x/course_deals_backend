@@ -5,6 +5,7 @@ import com.thanh0x.coursedeal.dto.EmailLoginRequestDTO
 import com.thanh0x.coursedeal.dto.RefreshTokenRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterResponseDTO
+import com.thanh0x.coursedeal.dto.SendOtpRequestDTO
 import com.thanh0x.coursedeal.dto.VerifyOtpRequestDTO
 import com.thanh0x.coursedeal.model.user.UserEntity
 import com.thanh0x.coursedeal.security.TokenAuthenticationFilter
@@ -38,6 +39,18 @@ class AuthController(
         @Valid @RequestBody request: RegisterRequestDTO,
     ): ResponseEntity<RegisterResponseDTO> {
         return ResponseEntity.ok(emailAuthService.register(request))
+    }
+
+    @PostMapping("/send-otp", "/email/send-otp")
+    @Operation(
+        summary = "Send passwordless OTP to email",
+        description =
+            "Stores pending passwordless verification and 24-hour OTP (000000) in Redis for email verification.",
+    )
+    fun sendOtp(
+        @Valid @RequestBody request: SendOtpRequestDTO,
+    ): ResponseEntity<RegisterResponseDTO> {
+        return ResponseEntity.ok(emailAuthService.sendOtp(request))
     }
 
     @PostMapping("/verify-otp")

@@ -8,6 +8,7 @@ import com.thanh0x.coursedeal.dto.EmailLoginRequestDTO
 import com.thanh0x.coursedeal.dto.RefreshTokenRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterResponseDTO
+import com.thanh0x.coursedeal.dto.SendOtpRequestDTO
 import com.thanh0x.coursedeal.dto.VerifyOtpRequestDTO
 import com.thanh0x.coursedeal.exception.BadRequestException
 import com.thanh0x.coursedeal.exception.ConflictException
@@ -80,6 +81,28 @@ class EmailAuthService(
         )
     }
 
+    fun sendOtp(request: SendOtpRequestDTO): RegisterResponseDTO {
+        val email = request.email.trim().lowercase()
+        val pending =
+            PendingRegistration(
+                email = email,
+                otp = HARDCODED_OTP,
+            )
+
+        val json = objectMapper.writeValueAsString(pending)
+        redisTemplate.opsForValue().set(
+            OTP_KEY_PREFIX + email,
+            json,
+            Duration.ofHours(OTP_TTL_HOURS),
+        )
+
+        return RegisterResponseDTO(
+            message = "OTP sent to email",
+            email = email,
+            expiresInSeconds = OTP_TTL_SECONDS,
+        )
+    }
+
     @Transactional
     fun verifyOtp(request: VerifyOtpRequestDTO): AuthResponseDTO {
         val email = request.email.trim().lowercase()
@@ -91,9 +114,12 @@ class EmailAuthService(
         }
 
         val existingUser = userRepository.findByEmail(email)
+        val isNewUser = (existingUser == null)
         val user =
             if (existingUser != null) {
-                existingUser.password = pending.passwordHash
+                if (pending.passwordHash.isNotBlank()) {
+                    existingUser.password = pending.passwordHash
+                }
                 if (!pending.fullName.isNullOrBlank()) {
                     existingUser.fullName = pending.fullName
                 }
@@ -106,7 +132,7 @@ class EmailAuthService(
                     UserEntity(
                         username = email,
                         email = email,
-                        password = pending.passwordHash,
+                        password = pending.passwordHash.takeIf { it.isNotBlank() },
                         fullName = pending.fullName?.takeIf { it.isNotBlank() } ?: email.substringBefore("@"),
                         fcmToken = request.fcmToken?.takeIf { it.isNotBlank() },
                     ),
@@ -114,7 +140,7 @@ class EmailAuthService(
             }
 
         redisTemplate.delete(key)
-        return issueAuthResponse(user)
+        return issueAuthResponse(user, isNewUser)
     }
 
     @Transactional
@@ -166,7 +192,10 @@ class EmailAuthService(
         )
     }
 
-    private fun issueAuthResponse(user: UserEntity): AuthResponseDTO {
+    private fun issueAuthResponse(
+        user: UserEntity,
+        isNewUser: Boolean = false,
+    ): AuthResponseDTO {
         val sessionId = userSessionService.createSession(user)
         val refreshToken = userSessionService.createRefreshToken(sessionId)
         val accessToken = tokenProvider.createToken(user, sessionId)
@@ -175,6 +204,7 @@ class EmailAuthService(
             refreshToken = refreshToken,
             tokenType = "Bearer",
             expiresIn = (properties.jwtExpiration / MILLIS_PER_SECOND).toString(),
+            isNewUser = isNewUser,
         )
     }
 }

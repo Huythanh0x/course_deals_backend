@@ -29,14 +29,20 @@ class SocialAuthService(
     private val properties: IdentityProperties,
     private val userSessionService: UserSessionService,
 ) {
+    data class UserCreationResult(
+        val user: UserEntity,
+        val isNewUser: Boolean,
+    )
+
     @Transactional
     fun login(request: SocialLoginRequestDTO): AuthResponseDTO {
-        val user: UserEntity =
+        val result: UserCreationResult =
             when (request.provider) {
                 AuthProvider.GOOGLE -> verifyGoogleToken(request.idToken)
                 AuthProvider.APPLE -> verifyAppleToken()
                 else -> throw BadRequestException("Unsupported social provider")
             }
+        val user = result.user
 
         if (request.fcmToken != null) {
             user.fcmToken = request.fcmToken
@@ -50,6 +56,7 @@ class SocialAuthService(
             accessToken = token,
             refreshToken = refreshToken,
             tokenType = "Bearer",
+            isNewUser = result.isNewUser,
         )
     }
 
@@ -59,7 +66,7 @@ class SocialAuthService(
             throw BadRequestException("Mock authentication is disabled in this environment")
         }
         val defaultAvatar = "https://lh3.googleusercontent.com/a/default-user"
-        val user =
+        val result =
             findOrCreateUser(
                 request.email,
                 request.name,
@@ -67,6 +74,7 @@ class SocialAuthService(
                 "mock-google-${request.email}",
                 defaultAvatar,
             )
+        val user = result.user
         if (request.fcmToken != null) {
             user.fcmToken = request.fcmToken
             userRepository.save(user)
@@ -78,10 +86,11 @@ class SocialAuthService(
             accessToken = token,
             refreshToken = refreshToken,
             tokenType = "Bearer",
+            isNewUser = result.isNewUser,
         )
     }
 
-    private fun verifyGoogleToken(idTokenString: String): UserEntity {
+    private fun verifyGoogleToken(idTokenString: String): UserCreationResult {
         if (properties.mockAuthEnabled && idTokenString.startsWith("mock-")) {
             return findOrCreateMockUser(idTokenString)
         }
@@ -105,7 +114,7 @@ class SocialAuthService(
         }
     }
 
-    fun processGooglePayload(payload: GoogleIdToken.Payload): UserEntity {
+    fun processGooglePayload(payload: GoogleIdToken.Payload): UserCreationResult {
         val email = payload.email
         if (email.isNullOrBlank()) {
             throw BadRequestException("Google ID Token missing email claim")
@@ -121,7 +130,7 @@ class SocialAuthService(
         return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId, picture)
     }
 
-    private fun findOrCreateMockUser(idTokenString: String): UserEntity {
+    private fun findOrCreateMockUser(idTokenString: String): UserCreationResult {
         val email =
             if (idTokenString.contains("@")) {
                 idTokenString.removePrefix("mock-")
@@ -138,7 +147,7 @@ class SocialAuthService(
         throw BadRequestException("Failed to verify Google Token: " + e.message, e)
     }
 
-    private fun verifyAppleToken(): UserEntity {
+    private fun verifyAppleToken(): UserCreationResult {
         // Mocking Apple for now - requires JWT validation with Apple's public keys
         throw UnsupportedOperationException("Apple login not yet implemented")
     }
@@ -149,7 +158,7 @@ class SocialAuthService(
         provider: AuthProvider,
         providerId: String,
         avatarUrl: String? = null,
-    ): UserEntity {
+    ): UserCreationResult {
         val socialAccount = socialAccountRepository.findByProviderAndProviderId(provider, providerId)
         if (socialAccount != null) {
             val existingUser = socialAccount.user!!
@@ -157,11 +166,13 @@ class SocialAuthService(
                 existingUser.avatarUrl = avatarUrl
                 userRepository.save(existingUser)
             }
-            return existingUser
+            return UserCreationResult(user = existingUser, isNewUser = false)
         }
 
+        val existingUser = userRepository.findByEmail(email)
+        val isNewUser = (existingUser == null)
         val user =
-            userRepository.findByEmail(email) ?: run {
+            existingUser ?: run {
                 val newUser =
                     UserEntity(
                         email = email,
@@ -186,6 +197,6 @@ class SocialAuthService(
             )
         socialAccountRepository.save(newSocialAccount)
 
-        return user
+        return UserCreationResult(user = user, isNewUser = isNewUser)
     }
 }
