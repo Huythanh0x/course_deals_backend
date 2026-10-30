@@ -10,5 +10,8 @@ if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; 
   docker compose -f docker-compose.local.yml up -d mysql redis
 fi
 
+echo "=== Starting Course Deals Crawler (mobile-local on port 8082) ==="
+./gradlew :modules:coupon-crawler-service:bootRun --args='--spring.profiles.active=mobile-local' > /tmp/mobile_local_crawler.log 2>&1 &
+
 echo "=== Starting Course Deals Backend (mobile-local on port 8081) ==="
 exec ./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=mobile-local'
