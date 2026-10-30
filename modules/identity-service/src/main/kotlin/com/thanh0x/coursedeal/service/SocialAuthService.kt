@@ -1,5 +1,6 @@
 package com.thanh0x.coursedeal.service
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
@@ -94,12 +95,7 @@ class SocialAuthService(
             val idToken = verifier.verify(idTokenString) ?: throw BadRequestException("Invalid Google ID Token")
 
             val payload = idToken.payload
-            val email = payload.email
-            val providerId = payload.subject
-            val name = payload["name"] as String?
-            val picture = payload["picture"] as String?
-
-            return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId, picture)
+            return processGooglePayload(payload)
         } catch (e: GeneralSecurityException) {
             failGoogleVerification(e)
         } catch (e: IOException) {
@@ -107,6 +103,22 @@ class SocialAuthService(
         } catch (e: IllegalArgumentException) {
             failGoogleVerification(e)
         }
+    }
+
+    fun processGooglePayload(payload: GoogleIdToken.Payload): UserEntity {
+        val email = payload.email
+        if (email.isNullOrBlank()) {
+            throw BadRequestException("Google ID Token missing email claim")
+        }
+        if (payload.emailVerified != true) {
+            throw BadRequestException("Google email is not verified")
+        }
+
+        val providerId = payload.subject
+        val name = payload["name"] as String?
+        val picture = payload["picture"] as String?
+
+        return findOrCreateUser(email, name, AuthProvider.GOOGLE, providerId, picture)
     }
 
     private fun findOrCreateMockUser(idTokenString: String): UserEntity {

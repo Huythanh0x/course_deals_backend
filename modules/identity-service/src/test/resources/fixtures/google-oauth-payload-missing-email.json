@@ -1,0 +1,14 @@
+{
+  "iss": "https://accounts.google.com",
+  "sub": "109876543210987654322",
+  "azp": "course-deals-client-id.apps.googleusercontent.com",
+  "aud": "course-deals-client-id.apps.googleusercontent.com",
+  "iat": 1700000000,
+  "exp": 1700003600,
+  "email_verified": true,
+  "name": "No Email User",
+  "picture": "https://lh3.googleusercontent.com/a/ALm5wu3no-email",
+  "given_name": "No Email",
+  "family_name": "User",
+  "locale": "en"
+}
