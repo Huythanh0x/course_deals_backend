@@ -1,0 +1,15 @@
+{
+  "iss": "https://accounts.google.com",
+  "sub": "109876543210987654321",
+  "azp": "course-deals-client-id.apps.googleusercontent.com",
+  "aud": "course-deals-client-id.apps.googleusercontent.com",
+  "iat": 1700000000,
+  "exp": 1700003600,
+  "email": "alex.doe@example.com",
+  "email_verified": true,
+  "name": "Alex Doe",
+  "picture": "https://lh3.googleusercontent.com/a/ALm5wu3example-avatar",
+  "given_name": "Alex",
+  "family_name": "Doe",
+  "locale": "en"
+}
