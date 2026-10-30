@@ -24,7 +24,8 @@ spring:
 
 jobrunr:
   background-job-server:
-    enabled: false
+    enabled: true
+    worker-count: 2
   dashboard:
     enabled: true
     port: 8001
