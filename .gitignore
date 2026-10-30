@@ -49,4 +49,3 @@ logs/
 # Google Antigravity / Agents
 .agents/tickets/
 .agents/worktrees/
-gradle.properties
