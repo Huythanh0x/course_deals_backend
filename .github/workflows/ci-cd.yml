@@ -17,76 +17,85 @@ env:
 
 jobs:
   build-and-push:
-    name: Build and Push Docker Images
+    name: Build, Lint, and Test
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Lint (ktlint + detekt)
         run: ./gradlew ktlintCheck detekt
 
       - name: Run Tests
-        run: ./gradlew clean test
+        run: ./gradlew test
 
-      - name: Extract metadata for API service
-        id: meta-api
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.BASE_IMAGE_NAME }}
-          tags: |
-            type=raw,value=api-{{branch}}
-            type=raw,value=api-pr-{{number}},enable=${{ github.event_name == 'pull_request' }}
-            type=semver,pattern={{version}},value=api-v{{version}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-            type=semver,pattern={{major}}.{{minor}},value=api-{{major}}.{{minor}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-            type=sha,prefix=api-{{branch}}-,format=short
-            type=raw,value=api-latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Extract metadata for Crawler service
-        id: meta-crawler
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.BASE_IMAGE_NAME }}
-          tags: |
-            type=raw,value=crawler-{{branch}}
-            type=raw,value=crawler-pr-{{number}},enable=${{ github.event_name == 'pull_request' }}
-            type=semver,pattern={{version}},value=crawler-v{{version}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-            type=semver,pattern={{major}}.{{minor}},value=crawler-{{major}}.{{minor}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-            type=sha,prefix=crawler-{{branch}}-,format=short
-            type=raw,value=crawler-latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and push API service image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          build-args: |
-            SERVICE_NAME=coupon-api-service
-          tags: ${{ steps.meta-api.outputs.tags }}
-          labels: ${{ steps.meta-api.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:api-buildcache
-          cache-to: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:api-buildcache,mode=max
-
-      - name: Build and push Crawler service image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          build-args: |
-            SERVICE_NAME=coupon-crawler-service
-          tags: ${{ steps.meta-crawler.outputs.tags }}
-          labels: ${{ steps.meta-crawler.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:crawler-buildcache
-          cache-to: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:crawler-buildcache,mode=max
+      # Docker image publishing is paused for the MVP phase where testing is done locally.
+      # Uncomment the steps below when automated image deployment is required.
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+      #
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      #     password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      #
+      # - name: Extract metadata for API service
+      #   id: meta-api
+      #   uses: docker/metadata-action@v5
+      #   with:
+      #     images: ${{ env.BASE_IMAGE_NAME }}
+      #     tags: |
+      #       type=raw,value=api-{{branch}}
+      #       type=raw,value=api-pr-{{number}},enable=${{ github.event_name == 'pull_request' }}
+      #       type=semver,pattern={{version}},value=api-v{{version}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      #       type=semver,pattern={{major}}.{{minor}},value=api-{{major}}.{{minor}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      #       type=sha,prefix=api-{{branch}}-,format=short
+      #       type=raw,value=api-latest,enable=${{ github.ref == 'refs/heads/main' }}
+      #
+      # - name: Extract metadata for Crawler service
+      #   id: meta-crawler
+      #   uses: docker/metadata-action@v5
+      #   with:
+      #     images: ${{ env.BASE_IMAGE_NAME }}
+      #     tags: |
+      #       type=raw,value=crawler-{{branch}}
+      #       type=raw,value=crawler-pr-{{number}},enable=${{ github.event_name == 'pull_request' }}
+      #       type=semver,pattern={{version}},value=crawler-v{{version}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      #       type=semver,pattern={{major}}.{{minor}},value=crawler-{{major}}.{{minor}},enable=${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+      #       type=sha,prefix=crawler-{{branch}}-,format=short
+      #       type=raw,value=crawler-latest,enable=${{ github.ref == 'refs/heads/main' }}
+      #
+      # - name: Build and push API service image
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     file: ./Dockerfile
+      #     push: ${{ github.event_name != 'pull_request' }}
+      #     build-args: |
+      #       SERVICE_NAME=coupon-api-service
+      #     tags: ${{ steps.meta-api.outputs.tags }}
+      #     labels: ${{ steps.meta-api.outputs.labels }}
+      #     cache-from: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:api-buildcache
+      #     cache-to: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:api-buildcache,mode=max
+      #
+      # - name: Build and push Crawler service image
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     file: ./Dockerfile
+      #     push: ${{ github.event_name != 'pull_request' }}
+      #     build-args: |
+      #       SERVICE_NAME=coupon-crawler-service
+      #     tags: ${{ steps.meta-crawler.outputs.tags }}
+      #     labels: ${{ steps.meta-crawler.outputs.labels }}
+      #     cache-from: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:crawler-buildcache
+      #     cache-to: type=registry,ref=${{ env.BASE_IMAGE_NAME }}:crawler-buildcache,mode=max
