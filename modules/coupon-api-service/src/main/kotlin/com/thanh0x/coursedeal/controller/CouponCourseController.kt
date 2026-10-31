@@ -4,6 +4,7 @@ import com.thanh0x.coursedeal.config.ApiProperties
 import com.thanh0x.coursedeal.dto.CouponDetailDTO
 import com.thanh0x.coursedeal.dto.CouponQueryDTO
 import com.thanh0x.coursedeal.dto.CouponRequestDTO
+import com.thanh0x.coursedeal.dto.CouponSearchCriteriaDTO
 import com.thanh0x.coursedeal.dto.PagedCouponResponseDTO
 import com.thanh0x.coursedeal.service.CourseResponseService
 import io.swagger.v3.oas.annotations.Operation
@@ -48,6 +49,20 @@ class CouponCourseController(
         @ModelAttribute queryDto: CouponQueryDTO,
     ): PagedCouponResponseDTO {
         return courseResponseService.listCoupons(queryDto)
+    }
+
+    @GetMapping("/search")
+    @Operation(
+        summary = "Multi-faceted full-text search with filters (public)",
+        description =
+            "Advanced multi-faceted search over coupons supporting full-text query `q` across title, heading, " +
+                "and description, combined with category, instructor/author, minRating, language, level, " +
+                "and flexible sorting (relevance, newest, expiring_soon, rating, students, reviews).",
+    )
+    fun searchCoupons(
+        @ModelAttribute criteria: CouponSearchCriteriaDTO,
+    ): PagedCouponResponseDTO {
+        return courseResponseService.searchCoupons(criteria)
     }
 
     /**

@@ -2,6 +2,7 @@ package com.thanh0x.coursedeal.service
 
 import com.thanh0x.coursedeal.dto.CouponDetailDTO
 import com.thanh0x.coursedeal.dto.CouponQueryDTO
+import com.thanh0x.coursedeal.dto.CouponSearchCriteriaDTO
 import com.thanh0x.coursedeal.exception.ResourceNotFoundException
 import com.thanh0x.coursedeal.mapper.CouponMapper
 import com.thanh0x.coursedeal.model.coupon.CouponCourseData
@@ -140,5 +141,35 @@ class CourseResponseServiceTest {
 
         assertEquals(123, result.courseId)
         assertEquals("Active Course", result.title)
+    }
+
+    @Test
+    fun `searchCoupons calls repository findAll with specification and pageable`() {
+        val page = PageImpl<CouponCourseData>(emptyList(), PageRequest.of(0, 20), 0)
+        `when`(
+            couponCourseRepository.findAll(
+                anyObject<org.springframework.data.jpa.domain.Specification<CouponCourseData>>(),
+                anyObject<PageRequest>(),
+            ),
+        ).thenReturn(page)
+
+        val criteria =
+            CouponSearchCriteriaDTO(
+                q = "python",
+                category = "Development",
+                instructor = "Jose",
+                minRating = 4.5f,
+                language = "English",
+                sort = "rating",
+                page = 0,
+                size = 20,
+            )
+
+        val result = service.searchCoupons(criteria)
+        assertNotNull(result)
+        verify(couponCourseRepository).findAll(
+            anyObject<org.springframework.data.jpa.domain.Specification<CouponCourseData>>(),
+            anyObject<PageRequest>(),
+        )
     }
 }

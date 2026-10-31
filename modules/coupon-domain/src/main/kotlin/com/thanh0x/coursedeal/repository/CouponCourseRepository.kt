@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -14,7 +15,7 @@ import java.time.LocalDateTime
 
 @Repository
 @Suppress("TooManyFunctions")
-interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
+interface CouponCourseRepository : JpaRepository<CouponCourseData, Int>, JpaSpecificationExecutor<CouponCourseData> {
     @Query(
         """
         SELECT c FROM CouponCourseData c WHERE 

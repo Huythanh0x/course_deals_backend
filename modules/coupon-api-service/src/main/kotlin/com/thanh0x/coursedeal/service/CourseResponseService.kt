@@ -4,6 +4,7 @@ import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.crawlerrunner.CourseDataExtractor
 import com.thanh0x.coursedeal.dto.CouponDetailDTO
 import com.thanh0x.coursedeal.dto.CouponQueryDTO
+import com.thanh0x.coursedeal.dto.CouponSearchCriteriaDTO
 import com.thanh0x.coursedeal.dto.PagedCouponResponseDTO
 import com.thanh0x.coursedeal.exception.BadRequestException
 import com.thanh0x.coursedeal.exception.ResourceNotFoundException
@@ -13,6 +14,7 @@ import com.thanh0x.coursedeal.model.coupon.CouponCourseHistory
 import com.thanh0x.coursedeal.repository.CouponCourseHistoryRepository
 import com.thanh0x.coursedeal.repository.CouponCourseRepository
 import com.thanh0x.coursedeal.repository.ExpiredCouponRepository
+import com.thanh0x.coursedeal.repository.specification.CouponCourseSpecifications
 import com.thanh0x.coursedeal.utils.Constant
 import com.thanh0x.coursedeal.utils.LastFetchTimeManager
 import org.springframework.data.domain.Page
@@ -91,6 +93,58 @@ class CourseResponseService(
             page.pageable.pageNumber,
             dtos,
         )
+    }
+
+    /**
+     * Multi-faceted full-text search endpoint implementation with Specification.
+     */
+    fun searchCoupons(criteria: CouponSearchCriteriaDTO): PagedCouponResponseDTO {
+        if (criteria.page < 0 || criteria.size < 0) {
+            throw BadRequestException("Page index and size cannot be negative")
+        }
+
+        val sort = createSearchSort(criteria.sort, criteria.sortDirection)
+        val pageSize = Math.min(criteria.size, Constant.MAX_PAGE_SIZE)
+        val pageable = PageRequest.of(criteria.page, pageSize, sort)
+
+        val now = Instant.now()
+        val spec = CouponCourseSpecifications.withCriteria(criteria, now)
+        val page = couponCourseRepository.findAll(spec, pageable)
+
+        val dtos = page.content.map { couponMapper.toSummaryDto(it) }
+
+        return PagedCouponResponseDTO(
+            LastFetchTimeManager.loadLasFetchedTimeInMilliSecond(),
+            page.totalElements,
+            page.totalPages,
+            page.pageable.pageNumber,
+            dtos,
+        )
+    }
+
+    /**
+     * Creates a Sort object for faceted search queries.
+     */
+    private fun createSearchSort(
+        sort: String?,
+        sortDirection: String?,
+    ): Sort {
+        val direction =
+            if (sortDirection?.equals("asc", ignoreCase = true) == true) {
+                Sort.Direction.ASC
+            } else {
+                Sort.Direction.DESC
+            }
+
+        return when (sort?.lowercase()) {
+            "relevance" -> Sort.by(Sort.Direction.DESC, "rating").and(Sort.by(Sort.Direction.DESC, "reviews"))
+            "newest" -> Sort.by(direction, "createdAt")
+            "expiring_soon" -> Sort.by(Sort.Direction.ASC, "expiredDate")
+            "rating" -> Sort.by(direction, "rating")
+            "students" -> Sort.by(direction, "students")
+            "reviews" -> Sort.by(direction, "reviews")
+            else -> createSort(sort, sortDirection)
+        }
     }
 
     /**
