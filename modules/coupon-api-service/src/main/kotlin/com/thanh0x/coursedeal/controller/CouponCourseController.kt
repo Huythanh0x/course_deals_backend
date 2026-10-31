@@ -6,6 +6,7 @@ import com.thanh0x.coursedeal.dto.CouponQueryDTO
 import com.thanh0x.coursedeal.dto.CouponRequestDTO
 import com.thanh0x.coursedeal.dto.PagedCouponResponseDTO
 import com.thanh0x.coursedeal.service.CourseResponseService
+import com.thanh0x.coursedeal.service.LiveWatchersService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 
 /**
  * Controller class for managing coupon-related endpoints.
@@ -33,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "Coupons", description = "Browsing, searching, and submitting Udemy coupons")
 class CouponCourseController(
     private val courseResponseService: CourseResponseService,
+    private val liveWatchersService: LiveWatchersService,
     private val properties: ApiProperties,
 ) {
     @GetMapping
@@ -146,5 +150,21 @@ class CouponCourseController(
         @PathVariable("courseId") courseId: String,
     ): CouponDetailDTO {
         return courseResponseService.getCouponDetail(courseId)
+    }
+
+    /**
+     * Real-time Server-Sent Events (SSE) endpoint streaming active viewers count for a course deal.
+     */
+    @GetMapping(value = ["/{courseId}/live-watchers"], produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    @Operation(
+        summary = "Stream live watchers count via SSE (public)",
+        description =
+            "Establishes a Server-Sent Events (SSE) stream emitting `{ \"activeViewers\": N }` " +
+                "on connection and every 10 seconds.",
+    )
+    fun streamLiveWatchers(
+        @PathVariable("courseId") courseId: Int,
+    ): SseEmitter {
+        return liveWatchersService.subscribe(courseId)
     }
 }

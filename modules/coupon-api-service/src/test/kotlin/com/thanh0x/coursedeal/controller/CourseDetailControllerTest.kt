@@ -46,6 +46,10 @@ class CourseDetailControllerTest {
 
     @Suppress("UnusedPrivateProperty")
     @MockitoBean
+    private lateinit var liveWatchersService: com.thanh0x.coursedeal.service.LiveWatchersService
+
+    @Suppress("UnusedPrivateProperty")
+    @MockitoBean
     private lateinit var userRepository: UserRepository
 
     @Suppress("UnusedPrivateProperty")
