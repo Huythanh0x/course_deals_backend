@@ -5,6 +5,10 @@ import com.thanh0x.coursedeal.dto.CouponDetailDTO
 import com.thanh0x.coursedeal.dto.CouponQueryDTO
 import com.thanh0x.coursedeal.dto.CouponRequestDTO
 import com.thanh0x.coursedeal.dto.PagedCouponResponseDTO
+import com.thanh0x.coursedeal.dto.VerificationAttestationRequestDTO
+import com.thanh0x.coursedeal.dto.VerificationAttestationResponseDTO
+import com.thanh0x.coursedeal.dto.VerificationHandshakeResponseDTO
+import com.thanh0x.coursedeal.service.ClientVerificationHandshakeService
 import com.thanh0x.coursedeal.service.CourseResponseService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -34,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController
 class CouponCourseController(
     private val courseResponseService: CourseResponseService,
     private val properties: ApiProperties,
+    private val clientVerificationHandshakeService: ClientVerificationHandshakeService,
 ) {
     @GetMapping
     @Operation(
@@ -146,5 +151,42 @@ class CouponCourseController(
         @PathVariable("courseId") courseId: String,
     ): CouponDetailDTO {
         return courseResponseService.getCouponDetail(courseId)
+    }
+
+    /**
+     * Initiates a client verification handshake for a course coupon.
+     * Returns an HMAC-signed ticket and verification target URL (TTL 60s).
+     */
+    @PostMapping("/{courseId}/verification-handshake")
+    @Operation(
+        summary = "Request verification handshake ticket for a coupon",
+        description =
+            "Public endpoint. Generates a single-use nonce and HMAC-SHA256 signature (TTL 60s) " +
+                "allowing mobile client to probe provider endpoint.",
+    )
+    fun initiateVerificationHandshake(
+        @PathVariable("courseId") courseId: Int,
+    ): ResponseEntity<VerificationHandshakeResponseDTO> {
+        val handshakeResponse = clientVerificationHandshakeService.initiateHandshake(courseId)
+        return ResponseEntity.ok(handshakeResponse)
+    }
+
+    /**
+     * Mobile client attestation callback.
+     * Validates HMAC signature and single-use nonce, and updates remaining uses / coupon status.
+     */
+    @PostMapping("/{courseId}/attestation")
+    @Operation(
+        summary = "Submit coupon verification attestation from mobile client",
+        description =
+            "Public endpoint protected by HMAC and nonce replay check. " +
+                "Updates coupon remaining count or marks expired.",
+    )
+    fun verifyAttestation(
+        @PathVariable("courseId") courseId: Int,
+        @Valid @RequestBody requestBody: VerificationAttestationRequestDTO,
+    ): ResponseEntity<VerificationAttestationResponseDTO> {
+        val attestationResponse = clientVerificationHandshakeService.verifyAttestation(courseId, requestBody)
+        return ResponseEntity.ok(attestationResponse)
     }
 }

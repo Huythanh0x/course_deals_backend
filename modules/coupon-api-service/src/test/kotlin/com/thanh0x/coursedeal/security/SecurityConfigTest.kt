@@ -49,4 +49,23 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/v1/preferences"))
             .andExpect(status().isForbidden)
     }
+
+    @Test
+    fun `coupon verification handshake endpoints are public`() {
+        // Unauthenticated client should be able to reach handshake without 401/403
+        val handshakeResult =
+            mockMvc.perform(
+                post("/api/v1/coupons/123/verification-handshake"),
+            ).andReturn()
+        assertThat(handshakeResult.response.status).isNotIn(401, 403)
+
+        // Attestation endpoint is also public (validations will reject 400 for bad payload, not 401/403)
+        val attestationResult =
+            mockMvc.perform(
+                post("/api/v1/coupons/123/attestation")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"),
+            ).andReturn()
+        assertThat(attestationResult.response.status).isNotIn(401, 403)
+    }
 }

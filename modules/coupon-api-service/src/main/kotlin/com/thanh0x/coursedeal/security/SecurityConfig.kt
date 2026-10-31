@@ -50,6 +50,9 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/error").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
+                    // Public verification handshake protocol endpoints (HMAC + nonce replay checks)
+                    .requestMatchers(HttpMethod.POST, "/api/v1/coupons/*/verification-handshake").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/coupons/*/attestation").permitAll()
                     // /api/v1/preferences is intentionally NOT listed here: it's per-user data
                     // and must fall through to anyRequest().authenticated() below.
                     .anyRequest().authenticated()

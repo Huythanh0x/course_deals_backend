@@ -40,6 +40,47 @@
 - **Passkeys (WebAuthn):** Two-step biometric handshake (Registration & Authentication) using FIDO2 standards.
 - **Security:** `TokenAuthenticationFilter` verifies JWTs and manages the security context for personalized requests (like Preference updates).
 
+## Distributed Mobile Client Verification Handshake
+Datacenter crawlers are heavily rate-limited by Cloudflare / Udemy bot mitigation. To maintain fresh coupon remaining counts and detect expired deals without getting rate-limited:
+1. When a mobile client views a deal, it requests a handshake ticket from the backend: `POST /api/v1/coupons/{id}/verification-handshake`.
+2. The backend generates a single-use nonce, HMAC-SHA256 signature, and sets a 60-second TTL stored in Redis.
+3. The mobile client on a residential IP performs a quick, lightweight probe to the provider verification URL in background (strict 5-second timeout).
+4. The client submits an attestation callback: `POST /api/v1/coupons/{id}/attestation`.
+5. The backend validates the signature, ensures non-replay via nonce consumption, and updates `usesRemaining` or purges dead coupons.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant App as Mobile Client (Residential IP)
+    participant BE as Coupon API Service
+    participant Redis as Redis Cache
+    participant DB as MySQL DB
+    participant Udemy as Course Provider (Udemy)
+
+    User->>App: Opens Deal Detail
+    App->>BE: POST /api/v1/coupons/{id}/verification-handshake
+    BE->>BE: Generate nonce & HMAC-SHA256 ticket (TTL 60s)
+    BE->>Redis: Store ticket (nonce -> courseId, expiresAt, signature)
+    BE-->>App: 200 OK (nonce, signature, verificationUrl, expiresAt)
+
+    App->>Udemy: Background GET verificationUrl (5s timeout)
+    alt Verification Successful
+        Udemy-->>App: Coupon Status & usesRemaining
+        App->>BE: POST /api/v1/coupons/{id}/attestation (nonce, signature, isValid=true, usesRemaining)
+        BE->>Redis: Validate & Consume nonce (replay protection)
+        BE->>BE: Verify HMAC-SHA256 signature
+        BE->>DB: Update usesRemaining / timestamps
+        BE-->>App: 200 OK (accepted=true)
+    else Coupon Dead / 404 / Expired
+        App->>BE: POST /api/v1/coupons/{id}/attestation (nonce, signature, isValid=false)
+        BE->>Redis: Validate & Consume nonce
+        BE->>BE: Verify HMAC-SHA256 signature
+        BE->>DB: Archive to expired_course_data & Purge from active
+        BE-->>App: 200 OK (accepted=true)
+    end
+```
+
 ## Sequence Diagram (JobRunr Flow)
 ```mermaid
 sequenceDiagram
