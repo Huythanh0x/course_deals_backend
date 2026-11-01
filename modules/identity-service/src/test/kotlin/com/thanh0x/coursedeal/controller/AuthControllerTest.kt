@@ -6,6 +6,7 @@ import com.thanh0x.coursedeal.dto.EmailLoginRequestDTO
 import com.thanh0x.coursedeal.dto.RefreshTokenRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterRequestDTO
 import com.thanh0x.coursedeal.dto.RegisterResponseDTO
+import com.thanh0x.coursedeal.dto.SendOtpRequestDTO
 import com.thanh0x.coursedeal.dto.VerifyOtpRequestDTO
 import com.thanh0x.coursedeal.exception.BadRequestException
 import com.thanh0x.coursedeal.exception.ConflictException
@@ -73,6 +74,28 @@ class AuthControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.message").value("OTP sent to email"))
             .andExpect(jsonPath("$.email").value("newuser@example.com"))
+            .andExpect(jsonPath("$.expiresInSeconds").value(86400))
+    }
+
+    @Test
+    fun `sendOtp should return 200 OK with OTP response`() {
+        val request = SendOtpRequestDTO(email = "otpuser@example.com")
+        val response =
+            RegisterResponseDTO(
+                message = "OTP sent to email",
+                email = "otpuser@example.com",
+                expiresInSeconds = 86400,
+            )
+        `when`(emailAuthService.sendOtp(nonNullAny(request))).thenReturn(response)
+
+        mockMvc.perform(
+            post("/api/v1/auth/send-otp")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.message").value("OTP sent to email"))
+            .andExpect(jsonPath("$.email").value("otpuser@example.com"))
             .andExpect(jsonPath("$.expiresInSeconds").value(86400))
     }
 

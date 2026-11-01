@@ -61,7 +61,7 @@ class GoogleOAuthPayloadParsingTest {
         assertEquals("https://lh3.googleusercontent.com/a/ALm5wu3example-avatar", payload["picture"])
         assertEquals("109876543210987654321", payload.subject)
 
-        val user = service.processGooglePayload(payload)
+        val user = service.processGooglePayload(payload).user
 
         assertNotNull(user)
         assertEquals("alex.doe@example.com", user.email)
