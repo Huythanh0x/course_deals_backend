@@ -46,6 +46,11 @@ class CourseDetailControllerTest {
 
     @Suppress("UnusedPrivateProperty")
     @MockitoBean
+    private lateinit var clientVerificationHandshakeService:
+        com.thanh0x.coursedeal.service.ClientVerificationHandshakeService
+
+    @Suppress("UnusedPrivateProperty")
+    @MockitoBean
     private lateinit var userRepository: UserRepository
 
     @Suppress("UnusedPrivateProperty")
