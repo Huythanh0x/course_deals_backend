@@ -59,8 +59,11 @@ class CouponCleanupService(
         if (!url.isNullOrBlank()) {
             archiveSingleUrl(url, coupon.courseId, coupon.title)
             couponCourseRepository.deleteByCouponUrl(url)
-            log.info("Archived and removed invalid/expired coupon: {} (ID: {})", coupon.title, coupon.courseId)
         }
+        if (couponCourseRepository.existsById(coupon.courseId)) {
+            couponCourseRepository.deleteById(coupon.courseId)
+        }
+        log.info("Archived and removed invalid/expired coupon: {} (ID: {})", coupon.title, coupon.courseId)
     }
 
     /**

@@ -4,6 +4,7 @@ import com.thanh0x.coursedeal.config.CrawlerProperties
 import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.crawlerrunner.crawler.EnextCrawler
 import com.thanh0x.coursedeal.crawlerrunner.crawler.RealDiscountCrawler
+import com.thanh0x.coursedeal.repository.CouponCourseRepository
 import com.thanh0x.coursedeal.repository.ExpiredCouponRepository
 import com.thanh0x.coursedeal.service.CouponCleanupService
 import com.thanh0x.coursedeal.service.CourseScraperService
@@ -21,6 +22,7 @@ import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
@@ -30,9 +32,11 @@ import java.util.concurrent.atomic.AtomicLong
  */
 @Component
 @EnableConfigurationProperties(CrawlerProperties::class)
+@Suppress("LongParameterList")
 class CrawlerRunner(
     private val courseScraperService: CourseScraperService,
     private val couponCleanupService: CouponCleanupService,
+    private val couponCourseRepository: CouponCourseRepository,
     private val expiredCouponRepository: ExpiredCouponRepository,
     private val enextCrawler: EnextCrawler,
     private val realDiscountCrawler: RealDiscountCrawler,
@@ -40,6 +44,10 @@ class CrawlerRunner(
 ) : ApplicationRunner {
     private val log = logger()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    companion object {
+        private const val SECONDS_IN_HOUR = 3600L
+    }
 
     override fun run(args: ApplicationArguments) {
         startCrawler()
@@ -70,6 +78,10 @@ class CrawlerRunner(
                         }
                     } catch (e: Exception) {
                         log.error("Failed to run expired coupon cleanup", e)
+                    }
+
+                    if (properties.enableSmartRefresh) {
+                        runSmartRefresh()
                     }
 
                     val discoveredUrls = mutableListOf<String>()
@@ -110,6 +122,29 @@ class CrawlerRunner(
             } catch (e: Exception) {
                 log.error("Error in crawler loop", e)
             }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun runSmartRefresh() {
+        try {
+            val expirationThreshold = Instant.now().plusSeconds(properties.refreshExpiringHours * SECONDS_IN_HOUR)
+            val updatedBefore = LocalDateTime.now().minusHours(properties.refreshOldHours.toLong())
+            val refreshUrls =
+                couponCourseRepository.findCouponUrlsNeedingRefresh(
+                    expirationThreshold,
+                    properties.refreshMinUsesRemaining,
+                    updatedBefore,
+                )
+            log.info(
+                "Smart refresh found {} active coupons needing re-validation",
+                refreshUrls.size,
+            )
+            for (url in refreshUrls) {
+                courseScraperService.enqueueScrapingTask(url, "crawler-refresh")
+            }
+        } catch (e: Exception) {
+            log.error("Failed to run smart refresh for active coupons", e)
         }
     }
 

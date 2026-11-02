@@ -3,6 +3,7 @@ package com.thanh0x.coursedeal.crawlerrunner
 import com.thanh0x.coursedeal.config.CrawlerProperties
 import com.thanh0x.coursedeal.crawlerrunner.crawler.EnextCrawler
 import com.thanh0x.coursedeal.crawlerrunner.crawler.RealDiscountCrawler
+import com.thanh0x.coursedeal.repository.CouponCourseRepository
 import com.thanh0x.coursedeal.repository.ExpiredCouponRepository
 import com.thanh0x.coursedeal.service.CouponCleanupService
 import com.thanh0x.coursedeal.service.CourseScraperService
@@ -14,6 +15,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -24,6 +26,7 @@ import java.time.LocalDateTime
 class CrawlerRunnerTest {
     private val courseScraperService = mock(CourseScraperService::class.java)
     private val couponCleanupService = mock(CouponCleanupService::class.java)
+    private val couponCourseRepository = mock(CouponCourseRepository::class.java)
     private val expiredCouponRepository = mock(ExpiredCouponRepository::class.java)
     private val enextCrawler = mock(EnextCrawler::class.java)
     private val realDiscountCrawler = mock(RealDiscountCrawler::class.java)
@@ -33,6 +36,7 @@ class CrawlerRunnerTest {
         CrawlerRunner(
             courseScraperService,
             couponCleanupService,
+            couponCourseRepository,
             expiredCouponRepository,
             enextCrawler,
             realDiscountCrawler,
@@ -46,6 +50,13 @@ class CrawlerRunnerTest {
         `when`(couponCleanupService.archiveAndPurgeExpiredCoupons()).thenReturn(0)
         `when`(
             expiredCouponRepository.findRecentlyCheckedExpiredUrls(nonNullAny(LocalDateTime.now())),
+        ).thenReturn(emptySet())
+        `when`(
+            couponCourseRepository.findCouponUrlsNeedingRefresh(
+                nonNullAny(Instant.now()),
+                nonNullAny(50),
+                nonNullAny(LocalDateTime.now()),
+            ),
         ).thenReturn(emptySet())
     }
 
@@ -85,5 +96,23 @@ class CrawlerRunnerTest {
         verify(couponCleanupService, times(1)).archiveAndPurgeExpiredCoupons()
         verify(courseScraperService, times(1)).enqueueScrapingTask("https://valid.example/1", "crawler")
         verify(courseScraperService, times(0)).enqueueScrapingTask("https://expired.example/old", "crawler")
+    }
+
+    @Test
+    fun `startCrawler enqueues coupons needing refresh when smart refresh is enabled`() {
+        `when`(
+            couponCourseRepository.findCouponUrlsNeedingRefresh(
+                nonNullAny(Instant.now()),
+                nonNullAny(50),
+                nonNullAny(LocalDateTime.now()),
+            ),
+        ).thenReturn(setOf("https://refresh.example/course"))
+        `when`(enextCrawler.getAllCouponUrls()).thenReturn(emptyList())
+        `when`(realDiscountCrawler.getAllCouponUrls()).thenReturn(emptyList())
+
+        runner.startCrawler()
+        Thread.sleep(500)
+
+        verify(courseScraperService, times(1)).enqueueScrapingTask("https://refresh.example/course", "crawler-refresh")
     }
 }
