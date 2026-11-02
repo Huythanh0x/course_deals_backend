@@ -33,7 +33,12 @@ When the user gives a general or raw requirement (e.g. "Add Course Reports", "Of
    - Render the complete proposal brief in the visible chat response and create the `TEAM_EXECUTION_BRIEF.md` artifact before requesting approval.
 4. **Publish Workspace Memory & Branches (Phase 2)**:
    - Stamp the active sprint onto the issue.
-   - Create sub-issues for BE and Android if full-stack.
+   - Create platform sub-issues under the parent issue via `create-sub-issues`:
+     - `+ Android` (Mandatory for client features)
+     - `+ iOS` (Mandatory for client features)
+     - `+ WatchOS` (if needed)
+     - `+ BE` (if needed)
+     - `+ Desktop` (if needed)
    - Checkout branches `<type>/<issue-number>-<slug>`.
    - Initialize `.agents/tickets/<issue-number>-<slug>/STATE.json` and `NOTES.md`.
 5. **Implement in Parallel (Phase 3)**:
@@ -141,7 +146,12 @@ Phase 4: Parallel Review & Backend QA
 6. **Draft Cross-Repo API Contract & Cross-Platform DoD Matrix**:
    - **Cross-Repo API Contract** (REST path, HTTP verbs, request/response JSON schema, nullability, HTTP status codes).
    - **Cross-Platform DoD Matrix**: Explicit verifiable criteria for happy path, failed path, error path, migrations, detekt/lint checks, and **product documentation updates** (updating affected `docs/product/` user flows or route specs).
-   - **Issue Plan**: Propose issue titles, labels, and parent/sub-issue structure.
+   - **Multi-Platform Issue Plan**: Propose top-level parent issue title and the platform sub-issue matrix:
+     - `+ Android` (Compose Multiplatform / Android target)
+     - `+ iOS` (Compose Multiplatform / iOS SwiftUI target)
+     - `+ WatchOS` (if needed)
+     - `+ BE` (if needed)
+     - `+ Desktop` (if needed)
 
 ---
 
@@ -206,7 +216,13 @@ Once approved at Checkpoint 1:
        }
      ' -f projectId="PVT_kwHOBEROFc4BhjJ2" -f itemId="<PROJECT_ITEM_ID>" -f fieldId="PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q" -f iterationId="<ACTIVE_ITERATION_ID>"
      ```
-   - **Sub-issues (for full-stack parent + child issues)**: Create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform` (or target repos). Each sub-issue body **MUST** specify its own concrete, domain-specific architecture and tech stack details (e.g. Spring Boot/Flyway/JPA/JobRunr for BE; Jetpack Compose/Clean Architecture/Hilt/Coroutines for App). Link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
+   - **Multi-Platform Sub-Issues Generation**: Create parent (`--project "Course Deals"`) and generate dedicated platform sub-issues via `create-sub-issues`:
+     - `+ Android` (`area: android`): CMP, `:app`, Glance AppWidgets, Room, Android Maestro test flow.
+     - `+ iOS` (`area: android` or `area: design`): CMP `iosApp`, SwiftUI WidgetKit, App Intents, iOS Maestro flow.
+     - `+ WatchOS (if needed)` (`area: android`): SwiftUI WatchApp, Smart Stack complications.
+     - `+ BE (if needed)` (`area: backend`): Spring Boot, Flyway, JobRunr, REST API.
+     - `+ Desktop (if needed)` (`area: desktop`): CMP `:desktopApp`, JavaFX WebView, Desktop test runner.
+     Each sub-issue body **MUST** specify its own concrete, domain-specific architecture and tech stack details per `create-sub-issues`. Link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
    - In each target repo, checkout latest `main`, pull, and create the branch `<type>/<issue-number>-<slug>`:
      ```bash
      git -C <repo-path> checkout main && git -C <repo-path> pull origin main
