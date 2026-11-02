@@ -166,11 +166,10 @@ class SocialAuthService(
                 existingUser.avatarUrl = avatarUrl
                 userRepository.save(existingUser)
             }
-            return UserCreationResult(user = existingUser, isNewUser = false)
+            return UserCreationResult(user = existingUser, isNewUser = existingUser.termsAcceptedAt == null)
         }
 
         val existingUser = userRepository.findByEmail(email)
-        val isNewUser = (existingUser == null)
         val user =
             existingUser ?: run {
                 val newUser =
@@ -183,6 +182,7 @@ class SocialAuthService(
                     )
                 userRepository.save(newUser)
             }
+        val isNewUser = (user.termsAcceptedAt == null)
 
         if (avatarUrl != null && user.avatarUrl == null) {
             user.avatarUrl = avatarUrl

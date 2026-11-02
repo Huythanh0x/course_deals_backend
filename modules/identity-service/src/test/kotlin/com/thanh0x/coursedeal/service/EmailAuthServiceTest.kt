@@ -27,6 +27,7 @@ import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.ValueOperations
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import java.time.Duration
+import java.time.LocalDateTime
 import java.util.Optional
 
 class EmailAuthServiceTest {
@@ -165,7 +166,7 @@ class EmailAuthServiceTest {
     }
 
     @Test
-    fun `verifyOtp with existing user returns isNewUser false and preserves user`() {
+    fun `verifyOtp with existing user who accepted terms returns isNewUser false and preserves user`() {
         val pending =
             EmailAuthService.PendingRegistration(
                 email = "existing@example.com",
@@ -177,6 +178,7 @@ class EmailAuthServiceTest {
                 username = "existing@example.com",
                 email = "existing@example.com",
                 fullName = "Existing User",
+                termsAcceptedAt = LocalDateTime.of(2026, 11, 2, 0, 0),
             )
         `when`(valueOperations.get("auth:otp:existing@example.com"))
             .thenReturn(objectMapper.writeValueAsString(pending))
@@ -197,6 +199,37 @@ class EmailAuthServiceTest {
         assertEquals("updated-fcm", existing.fcmToken)
         verify(userRepository).save(existing)
         verify(redisTemplate).delete("auth:otp:existing@example.com")
+    }
+
+    @Test
+    fun `verifyOtp with existing user whose termsAcceptedAt is null returns isNewUser true`() {
+        val pending =
+            EmailAuthService.PendingRegistration(
+                email = "pending-terms@example.com",
+                otp = "000000",
+            )
+        val existing =
+            UserEntity(
+                id = 100,
+                username = "pending-terms@example.com",
+                email = "pending-terms@example.com",
+                fullName = "Pending Terms User",
+                termsAcceptedAt = null,
+            )
+        `when`(valueOperations.get("auth:otp:pending-terms@example.com"))
+            .thenReturn(objectMapper.writeValueAsString(pending))
+        `when`(userRepository.findByEmail("pending-terms@example.com")).thenReturn(existing)
+
+        val response =
+            service.verifyOtp(
+                VerifyOtpRequestDTO(
+                    email = "pending-terms@example.com",
+                    otp = "000000",
+                ),
+            )
+
+        assertEquals(true, response.isNewUser)
+        verify(redisTemplate).delete("auth:otp:pending-terms@example.com")
     }
 
     @Test

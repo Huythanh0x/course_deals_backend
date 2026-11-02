@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToMany
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import java.time.LocalDateTime
 
 /**
  * Represents a user entity stored in the database.
@@ -32,6 +33,8 @@ class UserEntity(
     var email: String? = null,
     var fcmToken: String? = null,
     var avatarUrl: String? = null,
+    @Column(name = "terms_accepted_at")
+    var termsAcceptedAt: LocalDateTime? = null,
     @ManyToMany(fetch = FetchType.EAGER, cascade = [CascadeType.ALL])
     @JoinTable(
         name = "user_roles",
