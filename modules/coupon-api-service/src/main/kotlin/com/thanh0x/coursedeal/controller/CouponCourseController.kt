@@ -37,6 +37,7 @@ class CouponCourseController(
 ) {
     @GetMapping
     @Operation(
+        operationId = "listCoupons",
         summary = "List/search/filter coupons (public)",
         description =
             "Paged, filterable coupon listing. All query params are optional. " +
@@ -56,6 +57,7 @@ class CouponCourseController(
      */
     @PostMapping
     @Operation(
+        operationId = "createCoupon",
         summary = "Submit a coupon URL for validation",
         description =
             "Returns 202 Accepted immediately - the URL is enqueued and validated asynchronously by a " +
@@ -65,7 +67,7 @@ class CouponCourseController(
     @SecurityRequirement(name = "bearerAuth")
     fun createCoupon(
         @Valid @RequestBody requestBody: CouponRequestDTO,
-        request: HttpServletRequest,
+        @Parameter(hidden = true) request: HttpServletRequest,
     ): ResponseEntity<String> {
         courseResponseService.saveNewCouponUrlAsync(requestBody.couponUrl, request.remoteAddr)
         return ResponseEntity.accepted().body("Coupon submission received and is being processed.")
@@ -80,6 +82,7 @@ class CouponCourseController(
      */
     @DeleteMapping("/{courseId}")
     @Operation(
+        operationId = "deleteCoupon",
         summary = "Delete a coupon (not implemented)",
         description = "Always throws 501 Not Implemented - direct deletion is intentionally disabled.",
     )
@@ -97,6 +100,7 @@ class CouponCourseController(
      */
     @PutMapping("/{courseId}/refresh")
     @Operation(
+        operationId = "refreshCoupon",
         summary = "Re-validate a coupon against the provider",
         description =
             "Requires BOTH a valid JWT AND the `secret` query param matching the server's configured " +
@@ -106,7 +110,7 @@ class CouponCourseController(
     fun refreshCoupon(
         @PathVariable("courseId") courseId: Int,
         @Parameter(description = "Server-side refresh secret, not the JWT") @RequestParam("secret") secret: String,
-        request: HttpServletRequest,
+        @Parameter(hidden = true) request: HttpServletRequest,
     ): ResponseEntity<String> {
         if (properties.refreshSecret.isEmpty() || properties.refreshSecret != secret) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh secret.")
@@ -126,6 +130,7 @@ class CouponCourseController(
      */
     @PutMapping("/{courseId}")
     @Operation(
+        operationId = "updateCoupon",
         summary = "Update a coupon (not implemented)",
         description = "Always throws 501 Not Implemented - manual updates are not yet supported.",
     )
@@ -141,7 +146,10 @@ class CouponCourseController(
      * Retrieves coupon details for a specific course identified by courseId.
      */
     @GetMapping("/{courseId}")
-    @Operation(summary = "Get a single coupon by course ID (public)")
+    @Operation(
+        operationId = "getCouponDetail",
+        summary = "Get a single coupon by course ID (public)",
+    )
     fun getCouponDetail(
         @PathVariable("courseId") courseId: String,
     ): CouponDetailDTO {

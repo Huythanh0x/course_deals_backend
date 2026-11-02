@@ -1,0 +1,2024 @@
+{
+  "components" : {
+    "schemas" : {
+      "AuthResponseDTO" : {
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "string"
+          },
+          "isNewUser" : {
+            "type" : "boolean"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "tokenType" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "expiresIn", "isNewUser" ],
+        "type" : "object"
+      },
+      "CouponDetailDTO" : {
+        "description" : "Detailed information for a course coupon",
+        "properties" : {
+          "author" : {
+            "description" : "Author/Instructor of the course",
+            "type" : "string"
+          },
+          "category" : {
+            "description" : "Main category of the course",
+            "type" : "string"
+          },
+          "contentLength" : {
+            "description" : "Estimated length of the course content (e.g. in minutes)",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "couponCode" : {
+            "description" : "The coupon code string",
+            "type" : "string"
+          },
+          "couponUrl" : {
+            "description" : "The full Udemy coupon URL",
+            "type" : "string"
+          },
+          "courseId" : {
+            "description" : "Unique identifier of the course",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "description" : "Unix timestamp (seconds) when the coupon was discovered",
+            "example" : 1785660439,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "description" : {
+            "description" : "Full HTML/text description of the course",
+            "type" : "string"
+          },
+          "expiredTime" : {
+            "description" : "Unix timestamp (seconds) when the coupon expires",
+            "example" : 1785810480,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "heading" : {
+            "description" : "Short headline/catchphrase for the course",
+            "type" : "string"
+          },
+          "isNew" : {
+            "description" : "Flag indicating if this is a newly discovered coupon",
+            "type" : "boolean"
+          },
+          "language" : {
+            "description" : "Instructional language of the course",
+            "type" : "string"
+          },
+          "level" : {
+            "description" : "Difficulty level of the course",
+            "enum" : [ "BEGINNER", "INTERMEDIATE", "EXPERT", "ALL_LEVELS" ],
+            "type" : "string"
+          },
+          "previewImage" : {
+            "description" : "URL to the course preview image",
+            "type" : "string"
+          },
+          "previewVideo" : {
+            "description" : "Path/URL to the course preview video",
+            "type" : "string"
+          },
+          "rating" : {
+            "description" : "Average rating of the course (0-5)",
+            "format" : "float",
+            "type" : "number"
+          },
+          "reviews" : {
+            "description" : "Total number of reviews",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "students" : {
+            "description" : "Total number of enrolled students",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "subCategory" : {
+            "description" : "Sub-category of the course",
+            "type" : "string"
+          },
+          "title" : {
+            "description" : "Title of the course",
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "description" : "Unix timestamp (seconds) when the coupon data was last updated",
+            "example" : 1785660439,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "usesRemaining" : {
+            "description" : "Number of remaining redemptions for this coupon",
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "contentLength", "courseId", "isNew", "rating", "reviews", "students", "usesRemaining" ],
+        "type" : "object"
+      },
+      "CouponQueryDTO" : {
+        "description" : "Query parameters for searching and filtering coupons",
+        "properties" : {
+          "category" : {
+            "description" : "Filter by course category (exact, case-insensitive)",
+            "example" : "Development",
+            "type" : "string"
+          },
+          "contentLength" : {
+            "description" : "Minimum content length (minutes) filter. Use -1 to disable.",
+            "example" : 60,
+            "type" : "string"
+          },
+          "language" : {
+            "description" : "Filter by course language",
+            "example" : "English",
+            "type" : "string"
+          },
+          "level" : {
+            "description" : "Filter by course difficulty level",
+            "example" : "BEGINNER",
+            "type" : "string"
+          },
+          "numberPerPage" : {
+            "default" : "1000",
+            "description" : "Number of items per page (max 1000)",
+            "type" : "string"
+          },
+          "pageIndex" : {
+            "default" : "0",
+            "description" : "Zero-indexed page number",
+            "type" : "string"
+          },
+          "query" : {
+            "description" : "Free-text search across title, description, and heading",
+            "example" : "Kotlin",
+            "type" : "string"
+          },
+          "rating" : {
+            "description" : "Minimum rating filter. Use -1 to disable.",
+            "example" : 4.5,
+            "type" : "string"
+          },
+          "sortBy" : {
+            "default" : "createdAt",
+            "description" : "Field to sort by",
+            "enum" : [ "students", "rating", "reviews", "expiredTime", "createdAt" ],
+            "type" : "string"
+          },
+          "sortOrder" : {
+            "default" : "desc",
+            "description" : "Sort direction",
+            "enum" : [ "asc", "desc" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "category", "contentLength", "language", "level", "query", "rating" ],
+        "type" : "object"
+      },
+      "CouponRequestDTO" : {
+        "properties" : {
+          "couponUrl" : {
+            "minLength" : 1,
+            "pattern" : "^https?://.*udemy\\.com/.*",
+            "type" : "string"
+          }
+        },
+        "required" : [ "couponUrl" ],
+        "type" : "object"
+      },
+      "CouponSummaryDTO" : {
+        "description" : "Summary information for a course coupon",
+        "properties" : {
+          "author" : {
+            "description" : "Author/Instructor of the course",
+            "type" : "string"
+          },
+          "category" : {
+            "description" : "Main category of the course",
+            "type" : "string"
+          },
+          "courseId" : {
+            "description" : "Unique identifier of the course",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "description" : "Unix timestamp (seconds) when the coupon was discovered",
+            "example" : 1785660439,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "expiredTime" : {
+            "description" : "Unix timestamp (seconds) when the coupon expires",
+            "example" : 1785810480,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "isNew" : {
+            "description" : "Flag indicating if this is a newly discovered coupon",
+            "type" : "boolean"
+          },
+          "language" : {
+            "description" : "Instructional language of the course",
+            "type" : "string"
+          },
+          "level" : {
+            "description" : "Difficulty level of the course",
+            "enum" : [ "BEGINNER", "INTERMEDIATE", "EXPERT", "ALL_LEVELS" ],
+            "type" : "string"
+          },
+          "previewImage" : {
+            "description" : "URL to the course preview image",
+            "type" : "string"
+          },
+          "rating" : {
+            "description" : "Average rating of the course (0-5)",
+            "format" : "float",
+            "type" : "number"
+          },
+          "reviews" : {
+            "description" : "Total number of reviews",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "students" : {
+            "description" : "Total number of enrolled students",
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "description" : "Title of the course",
+            "type" : "string"
+          }
+        },
+        "required" : [ "courseId", "isNew", "rating", "reviews", "students" ],
+        "type" : "object"
+      },
+      "CourseDetailDTO" : {
+        "properties" : {
+          "author" : {
+            "type" : "string"
+          },
+          "category" : {
+            "type" : "string"
+          },
+          "contentLength" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "couponCode" : {
+            "type" : "string"
+          },
+          "couponUrl" : {
+            "type" : "string"
+          },
+          "courseId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "curriculum" : {
+            "$ref" : "#/components/schemas/CurriculumDTO"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "expiredDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "heading" : {
+            "type" : "string"
+          },
+          "incentives" : {
+            "$ref" : "#/components/schemas/IncentivesDTO"
+          },
+          "language" : {
+            "type" : "string"
+          },
+          "level" : {
+            "enum" : [ "BEGINNER", "INTERMEDIATE", "EXPERT", "ALL_LEVELS" ],
+            "type" : "string"
+          },
+          "previewImage" : {
+            "type" : "string"
+          },
+          "previewVideo" : {
+            "type" : "string"
+          },
+          "previewVideos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PreviewVideoDTO"
+            },
+            "type" : "array"
+          },
+          "pricingInfo" : {
+            "$ref" : "#/components/schemas/PricingInfoDTO"
+          },
+          "rating" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "relatedCourses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RelatedCourseDTO"
+            },
+            "type" : "array"
+          },
+          "reviews" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "reviewsSummary" : {
+            "$ref" : "#/components/schemas/ReviewsSummaryDTO"
+          },
+          "students" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "subCategory" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "usesRemaining" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CourseReportRequest" : {
+        "description" : "Request body for submitting a course report",
+        "properties" : {
+          "details" : {
+            "description" : "Optional additional details or explanation from reporter",
+            "example" : "Coupon code expired today and price reverted to $84.99",
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "reason" : {
+            "description" : "Reason for reporting (e.g. NOT_FREE, NO_DATA, EXPIRED, OTHER, or localized text)",
+            "example" : "NOT_FREE",
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "CourseReportResponse" : {
+        "description" : "Response payload after submitting a course report",
+        "properties" : {
+          "courseId" : {
+            "description" : "ID of the reported course",
+            "example" : 123456,
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "createdAt" : {
+            "description" : "Creation timestamp",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "details" : {
+            "description" : "Optional details submitted",
+            "example" : "Expired coupon",
+            "type" : "string"
+          },
+          "id" : {
+            "description" : "ID of the created report",
+            "example" : 1,
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "description" : "Reason submitted",
+            "example" : "NOT_FREE",
+            "type" : "string"
+          },
+          "status" : {
+            "description" : "Processing status of report",
+            "example" : "PENDING",
+            "type" : "string"
+          }
+        },
+        "required" : [ "courseId", "id", "reason", "status" ],
+        "type" : "object"
+      },
+      "CourseReviewsDTO" : {
+        "properties" : {
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "hasNext" : {
+            "type" : "boolean"
+          },
+          "hasPrevious" : {
+            "type" : "boolean"
+          },
+          "nextUrl" : {
+            "type" : "string"
+          },
+          "previousUrl" : {
+            "type" : "string"
+          },
+          "reviews" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReviewDTO"
+            },
+            "type" : "array"
+          },
+          "totalCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CurriculumDTO" : {
+        "properties" : {
+          "sections" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumSectionDTO"
+            },
+            "type" : "array"
+          },
+          "totalDuration" : {
+            "type" : "string"
+          },
+          "totalDurationSeconds" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalLectures" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CurriculumItemDTO" : {
+        "properties" : {
+          "canBePreviewed" : {
+            "type" : "boolean"
+          },
+          "contentSummary" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "isCodingExercise" : {
+            "type" : "boolean"
+          },
+          "isPracticeTest" : {
+            "type" : "boolean"
+          },
+          "itemType" : {
+            "type" : "string"
+          },
+          "learnUrl" : {
+            "type" : "string"
+          },
+          "objectIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "previewUrl" : {
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CurriculumSectionDTO" : {
+        "properties" : {
+          "duration" : {
+            "type" : "string"
+          },
+          "durationSeconds" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "index" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CurriculumItemDTO"
+            },
+            "type" : "array"
+          },
+          "lectureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmailLoginRequestDTO" : {
+        "properties" : {
+          "email" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "fcmToken" : {
+            "type" : "string"
+          },
+          "password" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "password" ],
+        "type" : "object"
+      },
+      "IncentivesDTO" : {
+        "properties" : {
+          "devicesAccess" : {
+            "type" : "string"
+          },
+          "hasAssignments" : {
+            "type" : "boolean"
+          },
+          "hasCertificate" : {
+            "type" : "boolean"
+          },
+          "hasClosedCaptions" : {
+            "type" : "boolean"
+          },
+          "hasLifetimeAccess" : {
+            "type" : "boolean"
+          },
+          "numArticles" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numCodingExercises" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numPracticeTests" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numQuizzes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "videoContentLength" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "MockLoginRequestDTO" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "fcmToken" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "name" ],
+        "type" : "object"
+      },
+      "PagedCouponResponseDTO" : {
+        "properties" : {
+          "courses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CouponSummaryDTO"
+            },
+            "type" : "array"
+          },
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lastFetchTime" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalCoupon" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PreferenceDTO" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "type" : "string"
+            },
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "keywords" : {
+            "items" : {
+              "type" : "string"
+            },
+            "maxItems" : 20,
+            "minItems" : 0,
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "notificationsEnabled" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "categories", "keywords", "notificationsEnabled" ],
+        "type" : "object"
+      },
+      "PreviewVideoDTO" : {
+        "properties" : {
+          "contentSummary" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "streamUrls" : {
+            "items" : {
+              "$ref" : "#/components/schemas/VideoSourceDTO"
+            },
+            "type" : "array"
+          },
+          "thumbnailUrl" : {
+            "type" : "string"
+          },
+          "timeEstimation" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "videoUrl" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PricingInfoDTO" : {
+        "properties" : {
+          "couponCode" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "currencySymbol" : {
+            "type" : "string"
+          },
+          "discountDeadlineText" : {
+            "type" : "string"
+          },
+          "discountPercent" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "listPrice" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "maximumUses" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "price" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "priceString" : {
+            "type" : "string"
+          },
+          "savingPrice" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "usesRemaining" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "RefreshTokenRequestDTO" : {
+        "properties" : {
+          "refreshToken" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "refreshToken" ],
+        "type" : "object"
+      },
+      "RegisterRequestDTO" : {
+        "properties" : {
+          "email" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "password" : {
+            "maxLength" : 2147483647,
+            "minLength" : 6,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "password" ],
+        "type" : "object"
+      },
+      "RegisterResponseDTO" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "expiresInSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "expiresInSeconds", "message" ],
+        "type" : "object"
+      },
+      "RelatedCourseDTO" : {
+        "properties" : {
+          "author" : {
+            "type" : "string"
+          },
+          "contentInfo" : {
+            "type" : "string"
+          },
+          "courseId" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "headline" : {
+            "type" : "string"
+          },
+          "image240x135" : {
+            "type" : "string"
+          },
+          "image480x270" : {
+            "type" : "string"
+          },
+          "image750x422" : {
+            "type" : "string"
+          },
+          "instructionalLevel" : {
+            "type" : "string"
+          },
+          "numReviews" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numSubscribers" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "rating" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ReviewDTO" : {
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "contentHtml" : {
+            "type" : "string"
+          },
+          "created" : {
+            "type" : "string"
+          },
+          "createdFormatted" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "rating" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "response" : {
+            "$ref" : "#/components/schemas/ReviewResponseDTO"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/ReviewUserDTO"
+          }
+        },
+        "type" : "object"
+      },
+      "ReviewResponseDTO" : {
+        "properties" : {
+          "content" : {
+            "type" : "string"
+          },
+          "contentHtml" : {
+            "type" : "string"
+          },
+          "created" : {
+            "type" : "string"
+          },
+          "createdFormatted" : {
+            "type" : "string"
+          },
+          "user" : {
+            "$ref" : "#/components/schemas/ReviewUserDTO"
+          }
+        },
+        "type" : "object"
+      },
+      "ReviewUserDTO" : {
+        "properties" : {
+          "displayName" : {
+            "type" : "string"
+          },
+          "image50x50" : {
+            "type" : "string"
+          },
+          "initials" : {
+            "type" : "string"
+          },
+          "publicDisplayName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ReviewsSummaryDTO" : {
+        "properties" : {
+          "averageRating" : {
+            "format" : "float",
+            "type" : "number"
+          },
+          "recentReviews" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReviewDTO"
+            },
+            "type" : "array"
+          },
+          "totalCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SendOtpRequestDTO" : {
+        "properties" : {
+          "email" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email" ],
+        "type" : "object"
+      },
+      "SocialLoginRequestDTO" : {
+        "properties" : {
+          "fcmToken" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "idToken" : {
+            "maxLength" : 2147483647,
+            "minLength" : 10,
+            "type" : "string"
+          },
+          "provider" : {
+            "enum" : [ "GOOGLE", "APPLE", "PASSKEY", "EMAIL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "idToken", "provider" ],
+        "type" : "object"
+      },
+      "UpdateUserProfileRequestDTO" : {
+        "properties" : {
+          "avatarUrl" : {
+            "maxLength" : 1024,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fcmToken" : {
+            "maxLength" : 512,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "UserProfileDTO" : {
+        "properties" : {
+          "avatarUrl" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fcmToken" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "preferences" : {
+            "$ref" : "#/components/schemas/PreferenceDTO"
+          }
+        },
+        "required" : [ "id" ],
+        "type" : "object"
+      },
+      "VerifyOtpRequestDTO" : {
+        "properties" : {
+          "email" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "fcmToken" : {
+            "type" : "string"
+          },
+          "otp" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "otp" ],
+        "type" : "object"
+      },
+      "VideoSourceDTO" : {
+        "properties" : {
+          "file" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      }
+    },
+    "securitySchemes" : {
+      "bearerAuth" : {
+        "bearerFormat" : "JWT",
+        "description" : "JWT returned by /api/v1/auth/social/login or the Passkey authentication flow (/api/v1/auth/passkey/authentication/finish). Send as `Authorization: Bearer <token>` on every request to an endpoint marked with the lock icon below.",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  },
+  "info" : {
+    "contact" : {
+      "email" : "huythanh0x@gmail.com",
+      "name" : "Thanh0x",
+      "url" : "https://github.com/huythanh0x"
+    },
+    "description" : "REST APIs for crawling and serving 100% off Udemy coupons with authentication support.",
+    "license" : {
+      "name" : "MIT License",
+      "url" : "https://opensource.org/licenses/MIT"
+    },
+    "title" : "Course Deal Server API",
+    "version" : "v1"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/courses/{courseId}/reports" : {
+      "post" : {
+        "description" : "Submits a user report for a course coupon deal.",
+        "operationId" : "reportCourse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CourseReportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourseReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Report an expired or invalid course deal",
+        "tags" : [ "Course Reports" ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "description" : "Authenticates a registered user by email and password and issues access + refresh tokens.",
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmailLoginRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Log in with email and password",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "description" : "Invalidates the active session in Redis associated with the current bearer token.",
+        "operationId" : "logout",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Log out of the current session",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/auth/logout-all" : {
+      "post" : {
+        "description" : "Invalidates all active sessions in Redis for the authenticated user across all devices.",
+        "operationId" : "logoutAll",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Log out of all sessions",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/auth/passkey/authentication/finish" : {
+      "post" : {
+        "description" : "Submit the platform's assertion response (as JSON) for the challenge obtained from /authentication/options. Returns the same AuthResponseDTO shape as social login - use the accessToken as a Bearer token on subsequent requests.",
+        "operationId" : "finishPasskeyAuthentication",
+        "parameters" : [ {
+          "description" : "Must match the email used in /authentication/options",
+          "in" : "query",
+          "name" : "email",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Step 2 of 2: complete passkey authentication and get a JWT",
+        "tags" : [ "Passkey Auth" ]
+      }
+    },
+    "/api/v1/auth/passkey/authentication/options" : {
+      "get" : {
+        "description" : "Returns an AssertionRequest challenge to pass to the platform's passkey get() API.",
+        "operationId" : "getPasskeyAuthenticationOptions",
+        "parameters" : [ {
+          "description" : "Email of the user logging in",
+          "in" : "query",
+          "name" : "email",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "WebAuthn AssertionRequest JSON payload"
+          }
+        },
+        "summary" : "Step 1 of 2: get passkey authentication (login) options",
+        "tags" : [ "Passkey Auth" ]
+      }
+    },
+    "/api/v1/auth/passkey/registration/finish" : {
+      "post" : {
+        "description" : "Submit the platform's attestation response (as JSON) for the challenge obtained from /registration/options. Fails with 400 if the options have expired (5 min TTL) or the email doesn't match. Returns a JWT on success, exactly like a login.",
+        "operationId" : "finishPasskeyRegistration",
+        "parameters" : [ {
+          "description" : "Must match the email used in /registration/options",
+          "in" : "query",
+          "name" : "email",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Step 2 of 2: complete passkey registration",
+        "tags" : [ "Passkey Auth" ]
+      }
+    },
+    "/api/v1/auth/passkey/registration/options" : {
+      "get" : {
+        "description" : "Returns a PublicKeyCredentialCreationOptions challenge to pass to the platform's passkey creation API. The result is cached server-side (Redis, 5 min TTL) keyed by email, matched by /registration/finish.",
+        "operationId" : "getPasskeyRegistrationOptions",
+        "parameters" : [ {
+          "description" : "Email identifying the user creating a passkey",
+          "in" : "query",
+          "name" : "email",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Display name shown by the platform's passkey UI",
+          "in" : "query",
+          "name" : "name",
+          "required" : false,
+          "schema" : {
+            "default" : "Course Deal User",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "WebAuthn PublicKeyCredentialCreationOptions JSON payload"
+          }
+        },
+        "summary" : "Step 1 of 2: get passkey registration options",
+        "tags" : [ "Passkey Auth" ]
+      }
+    },
+    "/api/v1/auth/refresh" : {
+      "post" : {
+        "description" : "Rotates a valid refresh token and issues a new JWT access token and refresh token.",
+        "operationId" : "refresh",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefreshTokenRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Refresh access token",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/auth/register" : {
+      "post" : {
+        "description" : "Stores pending registration and 24-hour OTP (000000) in Redis for email verification.",
+        "operationId" : "register",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegisterResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Register with email and password",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/auth/send-otp" : {
+      "post" : {
+        "description" : "Stores pending passwordless verification and 24-hour OTP (000000) in Redis for email verification.",
+        "operationId" : "sendOtp",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SendOtpRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RegisterResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Send passwordless OTP to email",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/auth/social/login" : {
+      "post" : {
+        "description" : "Verify a Google/Apple ID token (obtained client-side via that provider's SDK) and return a server-issued JWT. Creates the user account on first login. This endpoint is public - no Authorization header required.",
+        "operationId" : "socialLogin",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SocialLoginRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Exchange a social ID token for a server-side JWT",
+        "tags" : [ "Social Auth" ]
+      }
+    },
+    "/api/v1/auth/social/mock-login" : {
+      "post" : {
+        "description" : "Directly returns a valid signed JWT for a local test user without contacting Google servers. Only active when custom.mock-auth-enabled is true (e.g. local profile). Accepts optional custom email, name, and fcmToken.",
+        "operationId" : "mockLogin",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MockLoginRequestDTO"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Local development mock authentication",
+        "tags" : [ "Social Auth" ]
+      }
+    },
+    "/api/v1/auth/verify-otp" : {
+      "post" : {
+        "description" : "Verifies the 24-hour Redis OTP, creates the user account, and issues access + refresh tokens.",
+        "operationId" : "verifyOtp",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VerifyOtpRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuthResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Verify registration OTP",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/v1/coupons" : {
+      "get" : {
+        "description" : "Paged, filterable coupon listing. All query params are optional. Supports local filtering/sorting with fields: language, rating, students, reviews, expiredTime, createdAt. Time fields are returned as Unix timestamps (seconds). `rating`/`contentLength` use -1 to mean \"no filter\".",
+        "operationId" : "listCoupons",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "queryDto",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/CouponQueryDTO"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedCouponResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "List/search/filter coupons (public)",
+        "tags" : [ "Coupons" ]
+      },
+      "post" : {
+        "description" : "Returns 202 Accepted immediately - the URL is enqueued and validated asynchronously by a background worker (JobRunr), not validated inline. Poll GET /{courseId} afterwards, or just wait for the push notification if the user's preferences match.",
+        "operationId" : "createCoupon",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CouponRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Submit a coupon URL for validation",
+        "tags" : [ "Coupons" ]
+      }
+    },
+    "/api/v1/coupons/{courseId}" : {
+      "delete" : {
+        "description" : "Always throws 501 Not Implemented - direct deletion is intentionally disabled.",
+        "operationId" : "deleteCoupon",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Delete a coupon (not implemented)",
+        "tags" : [ "Coupons" ]
+      },
+      "get" : {
+        "operationId" : "getCouponDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CouponDetailDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get a single coupon by course ID (public)",
+        "tags" : [ "Coupons" ]
+      },
+      "put" : {
+        "description" : "Always throws 501 Not Implemented - manual updates are not yet supported.",
+        "operationId" : "updateCoupon",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CouponDetailDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Update a coupon (not implemented)",
+        "tags" : [ "Coupons" ]
+      }
+    },
+    "/api/v1/coupons/{courseId}/curriculum" : {
+      "get" : {
+        "description" : "Returns the course curriculum/syllabus with all sections and lectures",
+        "operationId" : "getCourseCurriculum",
+        "parameters" : [ {
+          "description" : "Optional coupon code",
+          "in" : "query",
+          "name" : "couponCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Course ID",
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurriculumDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get course curriculum",
+        "tags" : [ "Course Details" ]
+      }
+    },
+    "/api/v1/coupons/{courseId}/details" : {
+      "get" : {
+        "description" : "Returns detailed course information including reviews, curriculum, pricing, and related courses",
+        "operationId" : "getCourseDetails",
+        "parameters" : [ {
+          "description" : "Optional coupon code",
+          "in" : "query",
+          "name" : "couponCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Course ID",
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourseDetailDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get comprehensive course details",
+        "tags" : [ "Course Details" ]
+      }
+    },
+    "/api/v1/coupons/{courseId}/refresh" : {
+      "put" : {
+        "description" : "Requires BOTH a valid JWT AND the `secret` query param matching the server's configured refresh secret (a separate anti-abuse gate, not something a normal client will have).",
+        "operationId" : "refreshCoupon",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Server-side refresh secret, not the JWT",
+          "in" : "query",
+          "name" : "secret",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Re-validate a coupon against the provider",
+        "tags" : [ "Coupons" ]
+      }
+    },
+    "/api/v1/coupons/{courseId}/related" : {
+      "get" : {
+        "description" : "Returns a list of related/recommended courses",
+        "operationId" : "getRelatedCourses",
+        "parameters" : [ {
+          "description" : "Course ID",
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/RelatedCourseDTO"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get related courses",
+        "tags" : [ "Course Details" ]
+      }
+    },
+    "/api/v1/coupons/{courseId}/reviews" : {
+      "get" : {
+        "description" : "Returns paginated course reviews with instructor responses",
+        "operationId" : "getCourseReviews",
+        "parameters" : [ {
+          "description" : "Course ID",
+          "in" : "path",
+          "name" : "courseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Page number (1-indexed)",
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 1,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourseReviewsDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get course reviews",
+        "tags" : [ "Course Details" ]
+      }
+    },
+    "/api/v1/preferences" : {
+      "get" : {
+        "description" : "Creates and returns a default preference (notifications enabled, no filters) if none exists.",
+        "operationId" : "getPreferences",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreferenceDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Get the current user's notification preferences",
+        "tags" : [ "Preferences" ]
+      },
+      "put" : {
+        "description" : "Fully replaces categories, keywords, and notificationsEnabled (not a partial merge).",
+        "operationId" : "updatePreferences",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PreferenceDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreferenceDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Replace the current user's notification preferences",
+        "tags" : [ "Preferences" ]
+      }
+    },
+    "/api/v1/user/profile" : {
+      "get" : {
+        "description" : "Returns user identity details (name, email, avatar, fcmToken) and preferences.",
+        "operationId" : "getProfile",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserProfileDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Get the current authenticated user's profile",
+        "tags" : [ "User Profile" ]
+      },
+      "put" : {
+        "description" : "Updates user identity details. Non-null fields overwrite existing values.",
+        "operationId" : "updateProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateUserProfileRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserProfileDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Update the current user's profile",
+        "tags" : [ "User Profile" ]
+      }
+    },
+    "/api/v1/users/me" : {
+      "delete" : {
+        "description" : "Permanently deletes user account, cascade relations, and invalidates all active sessions.",
+        "operationId" : "deleteMyAccount",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Delete the current authenticated user's account",
+        "tags" : [ "User Management" ]
+      }
+    },
+    "/api/v1/users/me/accept-terms" : {
+      "post" : {
+        "description" : "Records the UTC timestamp when the authenticated user accepted Terms of Service and Privacy Policy.",
+        "operationId" : "acceptTerms",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "additionalProperties" : {
+                    "type" : "string"
+                  },
+                  "type" : "object"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Accept Terms of Service and Privacy Policy",
+        "tags" : [ "User Management" ]
+      }
+    }
+  },
+  "servers" : [ {
+    "description" : "Generated server url",
+    "url" : "http://localhost"
+  } ],
+  "tags" : [ {
+    "description" : "Email/password authentication, OTP verification, refresh tokens, and session logout",
+    "name" : "Auth"
+  }, {
+    "description" : "Browsing, searching, and submitting Udemy coupons",
+    "name" : "Coupons"
+  }, {
+    "description" : "API endpoints for detailed course information",
+    "name" : "Course Details"
+  }, {
+    "description" : "Course deal report endpoints",
+    "name" : "Course Reports"
+  }, {
+    "description" : "WebAuthn/FIDO2 passwordless registration and login",
+    "name" : "Passkey Auth"
+  }, {
+    "description" : "Per-user notification preferences (categories, keywords)",
+    "name" : "Preferences"
+  }, {
+    "description" : "Password-less login via Google/Apple ID tokens",
+    "name" : "Social Auth"
+  }, {
+    "description" : "Endpoints for managing user accounts",
+    "name" : "User Management"
+  }, {
+    "description" : "Endpoints for retrieving and updating the current user's profile",
+    "name" : "User Profile"
+  } ]
+}

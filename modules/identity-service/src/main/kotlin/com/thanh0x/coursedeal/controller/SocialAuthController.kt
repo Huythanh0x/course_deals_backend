@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 class SocialAuthController(private val socialAuthService: SocialAuthService) {
     @PostMapping("/login")
     @Operation(
+        operationId = "socialLogin",
         summary = "Exchange a social ID token for a server-side JWT",
         description =
             "Verify a Google/Apple ID token (obtained client-side via that provider's SDK) and " +
@@ -33,6 +34,7 @@ class SocialAuthController(private val socialAuthService: SocialAuthService) {
 
     @PostMapping("/mock-login")
     @Operation(
+        operationId = "mockLogin",
         summary = "Local development mock authentication",
         description =
             "Directly returns a valid signed JWT for a local test user without contacting Google servers. " +
