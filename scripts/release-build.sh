@@ -159,22 +159,25 @@ build_images() {
   done
 }
 
-case "${TARGET}" in
-  all)
-    build_jars
-    build_images
-    ;;
-  jar)
-    build_jars
-    ;;
-  image)
-    build_images
-    ;;
-  *)
-    echo "Unknown target: ${TARGET}" >&2
-    exit 1
-    ;;
-esac
+IFS=',' read -ra TARGET_LIST <<< "${TARGET}"
+for t in "${TARGET_LIST[@]}"; do
+  case "${t}" in
+    all)
+      build_jars
+      build_images
+      break
+      ;;
+    jar)
+      build_jars
+      ;;
+    image)
+      build_images
+      ;;
+    *)
+      echo "ℹ️  Skipping non-backend target: ${t}"
+      ;;
+  esac
+done
 
 echo ""
 echo "==> Generating SHA256 checksums..."
