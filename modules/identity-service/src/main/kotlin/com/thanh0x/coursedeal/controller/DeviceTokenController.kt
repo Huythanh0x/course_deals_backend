@@ -7,6 +7,7 @@ import com.thanh0x.coursedeal.model.user.UserEntity
 import com.thanh0x.coursedeal.repository.DeviceTokenRepository
 import com.thanh0x.coursedeal.repository.UserRepository
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -32,12 +33,13 @@ class DeviceTokenController(
 ) {
     @PostMapping
     @Operation(
+        operationId = "registerDeviceToken",
         summary = "Register or update FCM device token",
         description = "Registers a device token. If authenticated, links to the user. If guest, user_id is null.",
     )
     @SecurityRequirement(name = "bearerAuth")
     fun registerDeviceToken(
-        @AuthenticationPrincipal user: UserEntity?,
+        @AuthenticationPrincipal @Parameter(hidden = true) user: UserEntity?,
         @Valid @RequestBody request: DeviceTokenRegistrationRequestDTO,
     ): ResponseEntity<DeviceTokenResponseDTO> {
         val managedUser = user?.let { userRepository.findById(it.id).orElse(it) }
@@ -72,6 +74,7 @@ class DeviceTokenController(
 
     @DeleteMapping
     @Operation(
+        operationId = "deleteDeviceToken",
         summary = "Delete FCM device token",
         description = "Deletes a registered device token by FCM token value.",
     )

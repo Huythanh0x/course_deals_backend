@@ -137,6 +137,9 @@ class OpenApiExportTest {
                 "deleteMyAccount",
                 "getProfile",
                 "updateProfile",
+                "getAppConfig",
+                "registerDeviceToken",
+                "deleteDeviceToken",
             )
     }
 }

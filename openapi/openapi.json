@@ -1,6 +1,41 @@
 {
   "components" : {
     "schemas" : {
+      "AppConfigResponseDTO" : {
+        "description" : "Remote application configuration and version compatibility payload",
+        "properties" : {
+          "featureFlags" : {
+            "additionalProperties" : { },
+            "description" : "Key-value map of remote feature flags and dynamic thresholds",
+            "example" : {
+              "clientVerificationEnabled" : false,
+              "communityReportsEnabled" : true,
+              "enrollFlowReportThreshold" : 0.3,
+              "preferExternalBrowserCheckout" : false
+            },
+            "type" : "object"
+          },
+          "forceUpdateUrl" : {
+            "description" : "Store URL where users can update the application",
+            "example" : "https://play.google.com/store/apps/details?id=com.thanh0x.coursedeals",
+            "type" : "string"
+          },
+          "latestVersionCode" : {
+            "description" : "Latest available client version code in the store",
+            "example" : 106,
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minSupportedVersionCode" : {
+            "description" : "Minimum client version code allowed to run without force update",
+            "example" : 105,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "featureFlags", "forceUpdateUrl", "latestVersionCode", "minSupportedVersionCode" ],
+        "type" : "object"
+      },
       "AuthResponseDTO" : {
         "properties" : {
           "accessToken" : {
@@ -542,6 +577,54 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "DeviceTokenRegistrationRequestDTO" : {
+        "description" : "Request body for registering or updating an FCM device token",
+        "properties" : {
+          "fcmToken" : {
+            "description" : "FCM device registration token",
+            "example" : "fcm_token_sample_abc123",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "platform" : {
+            "description" : "Client device platform",
+            "enum" : [ "ANDROID", "IOS" ],
+            "example" : "ANDROID",
+            "type" : "string"
+          }
+        },
+        "required" : [ "fcmToken", "platform" ],
+        "type" : "object"
+      },
+      "DeviceTokenResponseDTO" : {
+        "description" : "Response returned after device token registration",
+        "properties" : {
+          "fcmToken" : {
+            "description" : "FCM device registration token",
+            "example" : "fcm_token_sample_abc123",
+            "type" : "string"
+          },
+          "platform" : {
+            "description" : "Client device platform",
+            "enum" : [ "ANDROID", "IOS" ],
+            "example" : "ANDROID",
+            "type" : "string"
+          },
+          "registered" : {
+            "description" : "Indicates whether the device token is registered",
+            "example" : true,
+            "type" : "boolean"
+          },
+          "userId" : {
+            "description" : "User ID if registered to an authenticated user, or null if guest",
+            "example" : 42,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "fcmToken", "platform", "registered" ],
         "type" : "object"
       },
       "EmailLoginRequestDTO" : {
@@ -1092,6 +1175,26 @@
         },
         "summary" : "Report an expired or invalid course deal",
         "tags" : [ "Course Reports" ]
+      }
+    },
+    "/api/v1/app/config" : {
+      "get" : {
+        "description" : "Returns minimum supported version code, latest version code, force update store URL, and remote feature flags.",
+        "operationId" : "getAppConfig",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AppConfigResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get remote app configuration",
+        "tags" : [ "App Config" ]
       }
     },
     "/api/v1/auth/login" : {
@@ -1936,6 +2039,58 @@
         "tags" : [ "User Profile" ]
       }
     },
+    "/api/v1/users/device-token" : {
+      "delete" : {
+        "description" : "Deletes a registered device token by FCM token value.",
+        "operationId" : "deleteDeviceToken",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "fcmToken",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Delete FCM device token",
+        "tags" : [ "Device Token" ]
+      },
+      "post" : {
+        "description" : "Registers a device token. If authenticated, links to the user. If guest, user_id is null.",
+        "operationId" : "registerDeviceToken",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeviceTokenRegistrationRequestDTO"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeviceTokenResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "bearerAuth" : [ ]
+        } ],
+        "summary" : "Register or update FCM device token",
+        "tags" : [ "Device Token" ]
+      }
+    },
     "/api/v1/users/me" : {
       "delete" : {
         "description" : "Permanently deletes user account, cascade relations, and invalidates all active sessions.",
@@ -1994,6 +2149,9 @@
     "url" : "http://localhost"
   } ],
   "tags" : [ {
+    "description" : "Remote application configuration and version compatibility gate",
+    "name" : "App Config"
+  }, {
     "description" : "Email/password authentication, OTP verification, refresh tokens, and session logout",
     "name" : "Auth"
   }, {
@@ -2005,6 +2163,9 @@
   }, {
     "description" : "Course deal report endpoints",
     "name" : "Course Reports"
+  }, {
+    "description" : "Endpoints for registering and managing FCM device tokens",
+    "name" : "Device Token"
   }, {
     "description" : "WebAuthn/FIDO2 passwordless registration and login",
     "name" : "Passkey Auth"
