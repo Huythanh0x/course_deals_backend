@@ -25,7 +25,10 @@ dependencies {
     // BadRequestException uses @ResponseStatus, which needs spring-web on the classpath
     // of every module that throws it.
     api(libs.spring.boot.starter.web)
+    implementation(libs.sentry.core)
     implementation(libs.slf4j.api)
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlin.stdlib)
+    testImplementation(libs.spring.boot.starter.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }

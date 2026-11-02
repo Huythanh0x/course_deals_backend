@@ -17,6 +17,7 @@ springdoc-openapi = "2.8.8"
 swagger-annotations = "2.2.30"
 mysql-connector = "8.3.0"
 mapstruct = "1.6.3"
+sentry = "7.22.0"
 
 [libraries]
 # Spring Boot BOM (imported via dependencyManagement in library modules)
@@ -60,6 +61,8 @@ springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starte
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger-annotations" }
 mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
 mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+sentry-spring-boot-starter-jakarta = { module = "io.sentry:sentry-spring-boot-starter-jakarta", version.ref = "sentry" }
+sentry-core = { module = "io.sentry:sentry", version.ref = "sentry" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 [plugins]

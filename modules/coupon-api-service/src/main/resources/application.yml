@@ -52,3 +52,9 @@ custom:
       community-reports-enabled: ${APP_CONFIG_FF_COMMUNITY_REPORTS_ENABLED:true}
       prefer-external-browser-checkout: ${APP_CONFIG_FF_PREFER_EXTERNAL_BROWSER_CHECKOUT:false}
       enroll-flow-report-threshold: ${APP_CONFIG_FF_ENROLL_FLOW_REPORT_THRESHOLD:0.3}
+
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:local}
+  traces-sample-rate: ${SENTRY_TRACES_SAMPLE_RATE:0.2}
+  send-default-pii: false

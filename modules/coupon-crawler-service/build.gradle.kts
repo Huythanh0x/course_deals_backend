@@ -27,6 +27,7 @@ dependencies {
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.security)
+    implementation(libs.sentry.spring.boot.starter.jakarta)
     implementation(libs.flyway.mysql)
     implementation(libs.mysql.connector.j)
     implementation(libs.kotlinx.coroutines.core)

@@ -4,6 +4,8 @@ import com.thanh0x.coursedeal.config.CrawlerProperties
 import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.crawlerrunner.crawler.EnextCrawler
 import com.thanh0x.coursedeal.crawlerrunner.crawler.RealDiscountCrawler
+import com.thanh0x.coursedeal.observability.ErrorTrackingReporter
+import com.thanh0x.coursedeal.observability.SentryErrorTrackingReporter
 import com.thanh0x.coursedeal.repository.CouponCourseRepository
 import com.thanh0x.coursedeal.repository.ExpiredCouponRepository
 import com.thanh0x.coursedeal.service.CouponCleanupService
@@ -18,6 +20,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -41,8 +44,11 @@ class CrawlerRunner(
     private val enextCrawler: EnextCrawler,
     private val realDiscountCrawler: RealDiscountCrawler,
     private val properties: CrawlerProperties,
+    @Autowired(required = false)
+    errorTrackingReporter: ErrorTrackingReporter? = null,
 ) : ApplicationRunner {
     private val log = logger()
+    private val reporter: ErrorTrackingReporter = errorTrackingReporter ?: SentryErrorTrackingReporter()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
     companion object {
@@ -71,14 +77,7 @@ class CrawlerRunner(
                     startTime.set(System.currentTimeMillis())
 
                     log.info("Starting new crawl round...")
-                    try {
-                        val purged = couponCleanupService.archiveAndPurgeExpiredCoupons()
-                        if (purged > 0) {
-                            log.info("Purged and archived {} expired coupons", purged)
-                        }
-                    } catch (e: Exception) {
-                        log.error("Failed to run expired coupon cleanup", e)
-                    }
+                    runExpiredCouponCleanup()
 
                     if (properties.enableSmartRefresh) {
                         runSmartRefresh()
@@ -121,7 +120,37 @@ class CrawlerRunner(
                 throw e
             } catch (e: Exception) {
                 log.error("Error in crawler loop", e)
+                reporter.reportException(
+                    throwable = e,
+                    tags =
+                        mapOf(
+                            "service" to "coupon-crawler-service",
+                            "job_type" to "crawler_loop",
+                            "source" to "crawler",
+                        ),
+                )
             }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun runExpiredCouponCleanup() {
+        try {
+            val purged = couponCleanupService.archiveAndPurgeExpiredCoupons()
+            if (purged > 0) {
+                log.info("Purged and archived {} expired coupons", purged)
+            }
+        } catch (e: Exception) {
+            log.error("Failed to run expired coupon cleanup", e)
+            reporter.reportException(
+                throwable = e,
+                tags =
+                    mapOf(
+                        "service" to "coupon-crawler-service",
+                        "job_type" to "expired_coupon_cleanup",
+                        "source" to "crawler",
+                    ),
+            )
         }
     }
 
@@ -145,6 +174,15 @@ class CrawlerRunner(
             }
         } catch (e: Exception) {
             log.error("Failed to run smart refresh for active coupons", e)
+            reporter.reportException(
+                throwable = e,
+                tags =
+                    mapOf(
+                        "service" to "coupon-crawler-service",
+                        "job_type" to "smart_refresh",
+                        "source" to "crawler-refresh",
+                    ),
+            )
         }
     }
 

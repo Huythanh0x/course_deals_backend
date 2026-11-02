@@ -4,11 +4,14 @@ import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.crawlerrunner.CourseDataExtractor
 import com.thanh0x.coursedeal.model.audit.ScrapingTaskLog
 import com.thanh0x.coursedeal.model.coupon.CouponCourseHistory
+import com.thanh0x.coursedeal.observability.ErrorTrackingReporter
+import com.thanh0x.coursedeal.observability.SentryErrorTrackingReporter
 import com.thanh0x.coursedeal.repository.CouponCourseHistoryRepository
 import com.thanh0x.coursedeal.repository.CouponCourseRepository
 import com.thanh0x.coursedeal.repository.ExpiredCouponRepository
 import com.thanh0x.coursedeal.repository.audit.ScrapingTaskLogRepository
 import org.jobrunr.scheduling.JobScheduler
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,8 +28,24 @@ class CourseScraperService(
     private val scrapingTaskLogRepository: ScrapingTaskLogRepository,
     private val jobScheduler: JobScheduler,
     private val couponCleanupService: CouponCleanupService,
+    @Autowired(required = false)
+    errorTrackingReporter: ErrorTrackingReporter? = null,
 ) {
     private val log = logger()
+    private val reporter: ErrorTrackingReporter = errorTrackingReporter ?: SentryErrorTrackingReporter()
+
+    companion object {
+        private val KNOWN_WORKER_SOURCES = setOf("crawler", "crawler-refresh", "report-worker", "unknown")
+
+        internal fun sanitizeSourceTag(remoteAddr: String): String {
+            val trimmed = remoteAddr.trim()
+            return when {
+                trimmed.isEmpty() -> "unknown"
+                trimmed in KNOWN_WORKER_SOURCES -> trimmed
+                else -> "api-submission"
+            }
+        }
+    }
 
     /**
      * Enqueues a scraping task into JobRunr.
@@ -67,23 +86,7 @@ class CourseScraperService(
             val couponData = extractor.getFullCouponCodeData()
 
             if (couponData == null) {
-                log.warn("Failed to extract valid data for URL: {}", couponUrl)
-                val existing =
-                    couponCourseRepository.findByCouponUrl(couponUrl)
-                        ?: if (extractor.courseId > 0) {
-                            couponCourseRepository.findByCourseId(extractor.courseId)
-                        } else {
-                            null
-                        }
-                if (existing != null) {
-                    couponCleanupService.archiveAndPurgeSingleCoupon(existing)
-                } else {
-                    couponCleanupService.recordExpiredUrl(
-                        url = couponUrl,
-                        courseId = if (extractor.courseId > 0) extractor.courseId else null,
-                    )
-                }
-                updateAuditLog(auditLog, "FAILED", "Extractor returned null data (expired or invalid coupon)")
+                handleExpiredOrInvalidExtraction(couponUrl, extractor.courseId, auditLog)
                 return
             }
 
@@ -111,8 +114,41 @@ class CourseScraperService(
             notificationService.notifyInterestedUsers(saved)
         } catch (e: Exception) {
             log.error("Error in async scraping for {}: {}", couponUrl, e.message, e)
+            reporter.reportException(
+                throwable = e,
+                tags =
+                    mapOf(
+                        "service" to "course-scraper",
+                        "job_type" to "validate_and_save_coupon",
+                        "source" to sanitizeSourceTag(remoteAddr),
+                    ),
+            )
             updateAuditLog(auditLog, "FAILED", e.javaClass.simpleName + ": " + e.message)
         }
+    }
+
+    private fun handleExpiredOrInvalidExtraction(
+        couponUrl: String,
+        extractedCourseId: Int,
+        auditLog: ScrapingTaskLog,
+    ) {
+        log.warn("Failed to extract valid data for URL: {}", couponUrl)
+        val existing =
+            couponCourseRepository.findByCouponUrl(couponUrl)
+                ?: if (extractedCourseId > 0) {
+                    couponCourseRepository.findByCourseId(extractedCourseId)
+                } else {
+                    null
+                }
+        if (existing != null) {
+            couponCleanupService.archiveAndPurgeSingleCoupon(existing)
+        } else {
+            couponCleanupService.recordExpiredUrl(
+                url = couponUrl,
+                courseId = if (extractedCourseId > 0) extractedCourseId else null,
+            )
+        }
+        updateAuditLog(auditLog, "FAILED", "Extractor returned null data (expired or invalid coupon)")
     }
 
     private fun updateAuditLog(
