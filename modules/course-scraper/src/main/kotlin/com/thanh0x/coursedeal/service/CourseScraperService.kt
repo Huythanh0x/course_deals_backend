@@ -68,11 +68,20 @@ class CourseScraperService(
 
             if (couponData == null) {
                 log.warn("Failed to extract valid data for URL: {}", couponUrl)
-                val existing = couponCourseRepository.findByCouponUrl(couponUrl)
+                val existing =
+                    couponCourseRepository.findByCouponUrl(couponUrl)
+                        ?: if (extractor.courseId > 0) {
+                            couponCourseRepository.findByCourseId(extractor.courseId)
+                        } else {
+                            null
+                        }
                 if (existing != null) {
                     couponCleanupService.archiveAndPurgeSingleCoupon(existing)
                 } else {
-                    couponCleanupService.recordExpiredUrl(couponUrl)
+                    couponCleanupService.recordExpiredUrl(
+                        url = couponUrl,
+                        courseId = if (extractor.courseId > 0) extractor.courseId else null,
+                    )
                 }
                 updateAuditLog(auditLog, "FAILED", "Extractor returned null data (expired or invalid coupon)")
                 return
