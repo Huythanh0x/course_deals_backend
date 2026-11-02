@@ -53,6 +53,8 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/courses/*/reports").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/reports").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/v1/users/device-token").permitAll()
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/users/device-token").permitAll()
                     // /api/v1/preferences is intentionally NOT listed here: it's per-user data
                     // and must fall through to anyRequest().authenticated() below.
                     .anyRequest().authenticated()
