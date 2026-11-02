@@ -46,6 +46,8 @@ class UserEntity(
     var socialAccounts: MutableList<SocialAccount> = mutableListOf(),
     @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
     var passkeyCredentials: MutableList<PasskeyCredential> = mutableListOf(),
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var deviceTokens: MutableList<DeviceTokenEntity> = mutableListOf(),
     @OneToOne(mappedBy = "user", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
     var preference: UserPreference? = null,
 )

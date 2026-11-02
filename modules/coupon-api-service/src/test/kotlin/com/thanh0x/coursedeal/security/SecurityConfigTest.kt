@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -48,5 +49,28 @@ class SecurityConfigTest {
     fun `preferences requires authentication`() {
         mockMvc.perform(get("/api/v1/preferences"))
             .andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `device token registration endpoint is reachable without authentication`() {
+        val result =
+            mockMvc.perform(
+                post("/api/v1/users/device-token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"),
+            ).andReturn()
+
+        assertThat(result.response.status).isNotIn(401, 403)
+    }
+
+    @Test
+    fun `device token deletion endpoint is reachable without authentication`() {
+        val result =
+            mockMvc.perform(
+                delete("/api/v1/users/device-token")
+                    .param("fcmToken", "sample-token"),
+            ).andReturn()
+
+        assertThat(result.response.status).isNotIn(401, 403)
     }
 }

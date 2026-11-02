@@ -13,7 +13,8 @@ Automates sprint planning, retrospectives, and backlog hygiene for Course Deals 
 Target GitHub Repositories & Project:
 - **Backend repo**: `/Users/thanh0x/StudioProjects/course_deals_backend` (`Huythanh0x/course_deals_backend`)
 - **Android / KMP repo**: `/Users/thanh0x/StudioProjects/course_deals_ComposeMultiplatform` (`Huythanh0x/course_deals_ComposeMultiplatform`)
-- **GitHub Project**: `"Course Deals"`
+- **GitHub Project**: `"Course Deals"` (`PVT_kwHOBEROFc4BhjJ2`, Project #4)
+- **Sprint Iteration Field**: `Sprint` (`PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q`)
 
 ---
 
@@ -30,9 +31,9 @@ Target GitHub Repositories & Project:
 
 ## 2. Sprint Sizing & Capacity Budget
 
-As a solo developer paired with Antigravity multi-agent orchestration (`team-flow`), boilerplate, DTO contracts, unit tests, and emulator runs are handled autonomously.
+As a solo developer supercharged with daily Antigravity multi-agent orchestration (`team-flow`), boilerplate generation, cross-repo contracts, automated unit tests, and emulator verifications occur rapidly and in parallel.
 
-- **Recommended Weekly Velocity**: **15 – 20 story points** total per sprint.
+- **Recommended Weekly Velocity**: **30 – 40 story points** total per sprint (~5–7 points per day).
 - **Fibonacci Point Scale**:
   - `size: 1`: Quick fix, documentation, minor config adjustment (~1-2 hours).
   - `size: 2`: Standard isolated endpoint or single-screen UI fix (~half day).
@@ -42,38 +43,71 @@ As a solo developer paired with Antigravity multi-agent orchestration (`team-flo
 
 ---
 
-## 3. Command: `sprint-flow plan` (Sunday Planning)
+## 3. Active Sprint Discovery & Auto-Assignment
 
-When invoked:
-1. **Query Active / Next Iteration**:
-   Run GitHub CLI to fetch the project board and active iteration:
-   ```bash
-   gh project item-list 1 --owner Huythanh0x --format json
-   ```
-2. **Review Incomplete Tickets from Previous Sprint**:
-   - List any issues still in `"In Progress"` or `"Todo"`.
-   - Ask the user whether to carry over or de-prioritize to `"Backlog"`.
-3. **Pull Candidate Backlog Items**:
-   - Query unassigned backlog items labeled `priority: P0` or `priority: P1`.
-   - Sum story points to ensure total does not exceed **20 points**.
-4. **Contract & Spec Pre-check**:
-   - For full-stack features, verify if cross-repo sub-issues are generated (Backend sub-issue + Android sub-issue).
-5. **Update GitHub Project**:
-   - Move approved issues to `"Sprint Backlog"` / `"Ready"` status and set the current `Iteration` field.
+To find the current active sprint on Project 4:
+```bash
+gh api graphql -f query='
+query {
+  node(id: "PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q") {
+    ... on ProjectV2IterationField {
+      configuration {
+        iterations {
+          id
+          title
+          startDate
+          duration
+        }
+      }
+    }
+  }
+}
+'
+```
+
+To assign an issue/PR to an iteration:
+```bash
+gh api graphql -f query='
+mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $iterationId: String!) {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: $projectId,
+    itemId: $itemId,
+    fieldId: $fieldId,
+    value: { iterationId: $iterationId }
+  }) {
+    projectV2Item { id }
+  }
+}
+' -f projectId="PVT_kwHOBEROFc4BhjJ2" -f itemId="<PROJECT_ITEM_ID>" -f fieldId="PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q" -f iterationId="<ITERATION_ID>"
+```
 
 ---
 
-## 4. Command: `sprint-flow retro` (Sunday Retrospective)
+## 4. Command: `sprint-flow plan` (Sunday Planning)
+
+When invoked:
+1. **Query Active / Next Iteration**: Determine current date and locate the target Sprint (e.g. Sprint 2).
+2. **Review Incomplete Tickets from Previous Sprint**:
+   - Query open tickets with previous sprint tag.
+   - User choices: carry forward into new sprint or move to `"Backlog"`.
+3. **Pull Candidate Backlog Items**:
+   - Query unassigned backlog items labeled `priority: P0` or `priority: P1`.
+   - Calculate total points using `size: N` labels (Cap at **30–40 points** max).
+4. **Update Project Board**:
+   - Move approved issues to `"Ready"` / `"Todo"` status.
+   - Stamp each approved issue with the target `iterationId`.
+
+---
+
+## 5. Command: `sprint-flow retro` (Sunday Retrospective)
 
 When invoked:
 1. **Calculate Completed Points**:
-   - Scan all issues closed or merged in the sprint's date window.
-   - Sum completed story points (`size: N`).
+   - Query all issues closed in the sprint's date window.
+   - Sum story points (`size: N`) completed.
 2. **Review Carried-Over / Blocked Work**:
-   - Highlight any ticket that failed verification or emulator QA.
-3. **Identify Architectural / Security Debt**:
-   - Check if any ADR or Intent security warnings were flagged by `security-arch-reviewer`.
-4. **Produce Sprint Summary Table**:
+   - Identify open tickets and reasons (CI failure, scope creep, blocked on external API).
+3. **Produce Sprint Summary Table**:
    ```markdown
    ### Sprint N Summary
    - **Target Points**: 18
@@ -84,7 +118,16 @@ When invoked:
 
 ---
 
-## 5. Definition of Done (DoD) for Sprint Items
+## 6. Command: `sprint-flow hygiene` (Audit "No Sprint" Items)
+
+To prevent items from floating on the board without a sprint:
+1. Scan all board items where `Sprint` iteration value is null.
+2. For closed items: Assign to `Sprint 0 (Foundation)` (if closed before Oct 26) or appropriate sprint by closed date.
+3. For open items: Prompt user or automatically attach to the active sprint if scheduled for work.
+
+---
+
+## 7. Definition of Done (DoD) for Sprint Items
 
 An issue is only considered **Done** in the sprint when:
 1. **Backend**:
@@ -97,3 +140,5 @@ An issue is only considered **Done** in the sprint when:
    - `:app:detekt` and unit tests pass.
    - Live emulator-5554 verification captured (UI screenshots uploaded to Cloudflare R2).
    - Squash-merged to `main`.
+3. **Documentation**:
+   - Product flows and route specs in `docs/product/` updated in the same PR.

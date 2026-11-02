@@ -4,6 +4,7 @@ import com.thanh0x.coursedeal.model.coupon.CouponCourseData
 import com.thanh0x.coursedeal.model.user.UserEntity
 import com.thanh0x.coursedeal.model.user.UserPreference
 import com.thanh0x.coursedeal.repository.UserRepository
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.doNothing
@@ -81,6 +82,43 @@ class NotificationServiceTest {
         service.notifyInterestedUsers(coupon)
 
         verify(service, times(1)).sendPush(eqKt("token-keyword"), anyString(), anyString())
+    }
+
+    @Test
+    fun `EP-01 subscribeToTopic when FirebaseApp uninitialized returns null safely`() {
+        val result = service.subscribeToTopic(listOf("token1", "token2"), "deals_all")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `EP-01 unsubscribeFromTopic when FirebaseApp uninitialized returns null safely`() {
+        val result = service.unsubscribeFromTopic(listOf("token1"), "deals_all")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `EP-01 sendToTopic when FirebaseApp uninitialized returns null safely`() {
+        val result = service.sendToTopic("deals_all", "New Deal", "Free Course!", mapOf("id" to "123"))
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `subscribeToTopic with empty tokens returns null immediately`() {
+        val result = service.subscribeToTopic(emptyList(), "deals_all")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `unsubscribeFromTopic with empty tokens returns null immediately`() {
+        val result = service.unsubscribeFromTopic(emptyList(), "deals_all")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `sendPush when FirebaseApp uninitialized does not crash or throw`() {
+        // Calling un-stubbed sendPush directly with uninitialized FirebaseApp
+        val rawService = NotificationService(userRepository)
+        rawService.sendPush("dummy-token", "Title", "Body")
     }
 
     // Mockito's eq() returns null as an internal placeholder, which crashes against sendPush's
