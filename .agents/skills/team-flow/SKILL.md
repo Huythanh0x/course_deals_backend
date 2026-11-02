@@ -153,7 +153,8 @@ Present a concise **Team Execution Brief** to the user:
 - **Edge-Case Decisions**: Defaults chosen + any open questions
 
 Then call `ask_question` with:
-- **(Recommended) Approve plan — create issue(s) and launch Agent Team**
+- **(Recommended) Approve plan & Merge on complete (launch team, verify KMP evidence, wait for green CI, and squash-merge)**
+- **Approve plan & Stop for review at PR (gated merge)**
 - **Adjust requirements or API contract** (user provides feedback via write-in)
 
 Do **not** proceed to Phase 2 until the user approves.
@@ -204,7 +205,8 @@ Once approved at Checkpoint 1:
            "slug": "<slug>",
            "title": "<title>",
            "branch": "<type>/<issue-number>-<slug>",
-           "scope": "backend | android | full-stack"
+           "scope": "backend | android | full-stack",
+           "auto_merge_on_complete": true
          },
          "current_phase": "PHASE_2_SETUP",
          "active_step": "STEP_1_INIT",
@@ -349,10 +351,34 @@ If `course_deals_ComposeMultiplatform` was modified:
 
 ---
 
-## Checkpoint 2: Ready to Merge Gate (Stop #2)
+## Checkpoint 2: Ready to Merge Gate (Stop #2 / Auto-Merge on Complete)
 
 Once `qa-release-engineer` reports back with the opened PR URL(s) and `security-arch-reviewer` passes:
 
+### A. Auto-Merge on Complete Path (When instructed or selected at Checkpoint 1)
+If the user instructed "on complete, merge for me" or `"auto_merge_on_complete": true` in `STATE.json`:
+1. **Do not stop or prompt with an interactive question**.
+2. Announce:
+   > *"PR(s) opened and verified. Auto-merge enabled: monitoring CI checks before squash-merging..."*
+3. Monitor CI checks (`gh pr checks <PR-number>`) until all checks pass green.
+4. Verify `mergeStateStatus == "CLEAN"` (if `BEHIND`, merge `origin/main` into the branch).
+5. Execute `merge-pr` immediately:
+   ```bash
+   gh pr merge <PR-number> -R Huythanh0x/<repo-name> \
+     --squash \
+     --subject "<type>(<scope>): <description> (Closes #<issue-number>)" \
+     --body "<summary of changes & evidence>"
+   ```
+6. Confirm branch auto-deleted and issue auto-closed:
+   ```bash
+   gh pr view <PR-number> -R Huythanh0x/<repo-name> --json state,mergedAt,mergeCommit
+   gh issue view <issue-number> -R Huythanh0x/<repo-name> --json state,stateReason
+   ```
+7. Update `STATE.json` (`phases.CHECKPOINT_2_MERGE_APPROVAL.status = "MERGED"`, `phases.CHECKPOINT_2_MERGE_APPROVAL.merged_at = "<timestamp>"`).
+8. Clean up local branch (`git checkout main && git pull origin main && git branch -d <branch>`).
+9. Present the final **Team Delivery & Merge Confirmation Report** to the user.
+
+### B. Interactive Review Gate (If user chose manual gate at Checkpoint 1)
 1. Present the **Team Delivery Report**:
    - **PR URL(s)** & Branch(es)
    - **Cross-Platform Parity Summary**: Android vs. iOS comparison verdict
@@ -365,4 +391,4 @@ Once `qa-release-engineer` reports back with the opened PR URL(s) and `security-
    - **Merge PR(s) now (run `merge-pr` once CI is green)**
    - **Leave PR(s) open — I will review/merge manually**
    - **Rework something** (user specifies via write-in; route directly to the responsible subagent via `send_message`)
-3. If the user selects **Merge PR(s) now**, follow the repo's `merge-pr` skill (verify CI checks green, squash-merge with clean Conventional Commits subject, verify branch auto-deleted and issue auto-closed, clean up local branch).
+3. If the user selects **Merge PR(s) now**, follow steps 3-8 of the Auto-Merge path above.
