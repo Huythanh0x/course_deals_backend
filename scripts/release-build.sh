@@ -13,6 +13,7 @@ OUTPUT_DIR="${REPO_ROOT}/build/release-artifacts"
 VERSION=""
 TARGET="all" # all, jar, image
 DOCKER_REGISTRY="" # e.g. docker.io/username or ghcr.io/username
+BASE_IMAGE_NAME=""
 PUSH_DOCKER=false
 
 print_usage() {
@@ -22,7 +23,8 @@ Usage: $(basename "$0") [OPTIONS]
 Options:
   -v, --version <ver>      Release version tag (e.g. v1.0.0 or 1.0.0) [Required]
   -t, --target <target>    Target artifact: all, jar, image [Default: all]
-  -r, --registry <reg>     Docker registry prefix (e.g. thanh0x)
+  -r, --registry <reg>     Docker registry prefix (e.g. huythanh0x)
+  -b, --base-image <img    Docker base image repository (e.g. huythanh0x/training-coupon-services)
   -p, --push               Push Docker images to registry (default: false, saves tarball)
   -o, --output <dir>       Artifact output directory [Default: build/release-artifacts]
   -h, --help               Show this help message
@@ -30,7 +32,7 @@ Options:
 Examples:
   $(basename "$0") --version v1.0.0
   $(basename "$0") --version v1.0.0 --target jar
-  $(basename "$0") --version v1.0.0 --target image
+  $(basename "$0") --version v1.0.0 --target image --push
 EOF
 }
 
@@ -46,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -r|--registry)
       DOCKER_REGISTRY="$2"
+      shift 2
+      ;;
+    -b|--base-image)
+      BASE_IMAGE_NAME="$2"
       shift 2
       ;;
     -p|--push)
@@ -131,29 +137,63 @@ build_images() {
     return 0
   fi
 
+  local base_repo="${BASE_IMAGE_NAME:-}"
+  if [[ -z "${base_repo}" ]]; then
+    if [[ -n "${DOCKER_REGISTRY}" ]]; then
+      if [[ "${DOCKER_REGISTRY}" == *"/"* ]]; then
+        base_repo="${DOCKER_REGISTRY}"
+      else
+        base_repo="${DOCKER_REGISTRY}/training-coupon-services"
+      fi
+    elif [[ -n "${DOCKER_HUB_USERNAME:-}" ]]; then
+      base_repo="${DOCKER_HUB_USERNAME}/training-coupon-services"
+    else
+      base_repo="huythanh0x/training-coupon-services"
+    fi
+  fi
+
+  local is_prerelease=false
+  if [[ "${VERSION}" =~ -(alpha|beta|rc) ]]; then
+    is_prerelease=true
+  fi
+
   local services=("coupon-api-service" "coupon-crawler-service")
   for svc in "${services[@]}"; do
-    local tag_name="${svc}:${CLEAN_VERSION}"
-    if [[ -n "${DOCKER_REGISTRY}" ]]; then
-      tag_name="${DOCKER_REGISTRY}/${svc}:${CLEAN_VERSION}"
+    local prefix="api"
+    if [[ "${svc}" == "coupon-crawler-service" ]]; then
+      prefix="crawler"
     fi
 
-    echo "Building Docker image: ${tag_name}..."
+    local build_tags=(
+      "-t" "${base_repo}:${prefix}-${CLEAN_VERSION}"
+      "-t" "${base_repo}:${prefix}-v${CLEAN_VERSION}"
+      "-t" "${svc}:${CLEAN_VERSION}"
+      "-t" "${svc}:latest"
+    )
+
+    if [[ "${is_prerelease}" == "false" ]]; then
+      build_tags+=("-t" "${base_repo}:${prefix}-latest")
+    fi
+
+    echo "Building Docker image for ${svc} (${base_repo}:${prefix}-${CLEAN_VERSION})..."
     docker build \
       --build-arg SERVICE_NAME="${svc}" \
-      -t "${tag_name}" \
-      -t "${svc}:latest" \
+      "${build_tags[@]}" \
       -f "${REPO_ROOT}/Dockerfile" \
       "${REPO_ROOT}"
 
     if [[ "${PUSH_DOCKER}" == "true" ]]; then
-      echo "Pushing image to registry: ${tag_name}..."
-      docker push "${tag_name}"
-      echo "✔ Pushed: ${tag_name}"
+      echo "Pushing image to Docker Hub: ${base_repo}:${prefix}-${CLEAN_VERSION}..."
+      docker push "${base_repo}:${prefix}-${CLEAN_VERSION}"
+      docker push "${base_repo}:${prefix}-v${CLEAN_VERSION}"
+      if [[ "${is_prerelease}" == "false" ]]; then
+        docker push "${base_repo}:${prefix}-latest"
+      fi
+      echo "✔ Pushed Docker images for ${svc} to ${base_repo}"
     else
       local tar_path="${OUTPUT_DIR}/${svc}-${CLEAN_VERSION}.docker.tar.gz"
       echo "Exporting image tarball to: ${tar_path}..."
-      docker save "${tag_name}" | gzip > "${tar_path}"
+      docker save "${base_repo}:${prefix}-${CLEAN_VERSION}" | gzip > "${tar_path}"
       echo "✔ Exported Docker image tarball: ${tar_path}"
     fi
   done

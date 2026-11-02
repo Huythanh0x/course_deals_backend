@@ -33,6 +33,10 @@ jobs:
   build-and-release:
     name: Build Backend & Publish Release
     runs-on: ubuntu-latest
+    env:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+      BASE_IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME != '' && format('{0}/training-coupon-services', secrets.DOCKER_HUB_USERNAME) || 'huythanh0x/training-coupon-services' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,29 +70,23 @@ jobs:
             cp "$CRAWLER_JAR" "release-assets/coupon-crawler-service-${CLEAN_VER}.jar"
           fi
 
+      - name: Set up QEMU
+        if: env.DOCKER_HUB_USERNAME != '' && env.DOCKER_HUB_TOKEN != ''
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         if: env.DOCKER_HUB_USERNAME != '' && env.DOCKER_HUB_TOKEN != ''
         uses: docker/setup-buildx-action@v3
-        env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Log in to Docker Hub
         if: env.DOCKER_HUB_USERNAME != '' && env.DOCKER_HUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-        env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push Docker Images
         if: env.DOCKER_HUB_USERNAME != '' && env.DOCKER_HUB_TOKEN != ''
-        env:
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
-          BASE_IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/training-coupon-services
         run: |
           VERSION_TAG="${{ github.ref_name }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -96,18 +94,33 @@ jobs:
           fi
           CLEAN_VER="${VERSION_TAG#v}"
 
+          IS_PRERELEASE=false
+          if [[ "${VERSION_TAG}" =~ -(alpha|beta|rc) ]]; then
+            IS_PRERELEASE=true
+          fi
+
+          echo "==> Building and pushing API Service Docker image..."
+          API_TAG_ARGS=("-t" "${BASE_IMAGE_NAME}:api-${CLEAN_VER}" "-t" "${BASE_IMAGE_NAME}:api-v${CLEAN_VER}")
+          if [ "${IS_PRERELEASE}" = "false" ]; then
+            API_TAG_ARGS+=("-t" "${BASE_IMAGE_NAME}:api-latest")
+          fi
+
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg SERVICE_NAME=coupon-api-service \
-            -t "${BASE_IMAGE_NAME}:api-${CLEAN_VER}" \
-            -t "${BASE_IMAGE_NAME}:api-latest" \
+            "${API_TAG_ARGS[@]}" \
             --push .
+
+          echo "==> Building and pushing Crawler Service Docker image..."
+          CRAWLER_TAG_ARGS=("-t" "${BASE_IMAGE_NAME}:crawler-${CLEAN_VER}" "-t" "${BASE_IMAGE_NAME}:crawler-v${CLEAN_VER}")
+          if [ "${IS_PRERELEASE}" = "false" ]; then
+            CRAWLER_TAG_ARGS+=("-t" "${BASE_IMAGE_NAME}:crawler-latest")
+          fi
 
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg SERVICE_NAME=coupon-crawler-service \
-            -t "${BASE_IMAGE_NAME}:crawler-${CLEAN_VER}" \
-            -t "${BASE_IMAGE_NAME}:crawler-latest" \
+            "${CRAWLER_TAG_ARGS[@]}" \
             --push .
 
       - name: Compute Checksums
