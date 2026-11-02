@@ -28,11 +28,15 @@ When the user gives a general or raw requirement (e.g. "Add Course Reports", "Of
    - Define structured **Use Cases (UCs)** and the **GUI Framework Test Specification** (Maestro E2E flows) for the feature.
    - Use `ask_question` to resolve architectural forks and product ambiguities with the user.
    - Run competitive/best-practice research (`search_web`) if needed.
-3. **Publish to GitHub Issue(s) & Initialize Workspace Memory (`STATE.json` & `NOTES.md`)**:
-   - Create parent issue and sub-issues on GitHub containing the locked API contract, Use Cases, 4-quadrant test scenarios, GUI framework test plan, and Definition of Done matrix.
+3. **Synchronize GitHub Issue Description & Propose Plan (Stop #1)**:
+   - Update existing issue description (`gh issue edit <id> --body "..."`) or create the top-level issue containing the solution architecture plan, Use Cases, 4-quadrant test scenarios, Maestro test plan, and DoD matrix.
+   - Render the complete proposal brief in the visible chat response and create the `TEAM_EXECUTION_BRIEF.md` artifact before requesting approval.
+4. **Publish Workspace Memory & Branches (Phase 2)**:
    - Stamp the active sprint onto the issue.
+   - Create sub-issues for BE and Android if full-stack.
    - Checkout branches `<type>/<issue-number>-<slug>`.
-4. **Implement in Parallel**:
+   - Initialize `.agents/tickets/<issue-number>-<slug>/STATE.json` and `NOTES.md`.
+5. **Implement in Parallel (Phase 3)**:
    - Only AFTER the issue is live and approved, launch `backend-engineer` and `android-engineer` subagents in parallel.
 
 ### 2. Living Ticket Memory & Step Resumption: Never Lose Context Across Sessions
@@ -143,9 +147,26 @@ Phase 4: Parallel Review & Backend QA
 
 ## Checkpoint 1: Spec & Plan Gate (Stop #1)
 
-Present a concise **Team Execution Brief** to the user:
+> [!CRITICAL]
+> **MANDATORY PROTOCOL AT STOP #1: UPDATE GITHUB ISSUE & DELIVER PROPOSAL PLAN**:
+> 1. **Update or Create GitHub Issue Description BEFORE Calling `ask_question`**:
+>    - **For existing issues** (e.g. `#158`): Agent MUST immediately update the GitHub issue description to reflect the full, elaborated proposal plan:
+>      ```bash
+>      gh issue edit <issue-number> -R Huythanh0x/<repo> --body "<comprehensive solution architecture plan>"
+>      ```
+>    - **For raw requirements without an existing issue**: Agent MUST create the top-level issue on GitHub containing the full proposal plan and add it to the Project board (`Course Deals`):
+>      ```bash
+>      gh issue create -R Huythanh0x/<repo> --title "..." --label "type: ..." --label "priority: ..." --label "area: ..." --label "size: ..." --project "Course Deals" --body "<comprehensive solution architecture plan>"
+>      ```
+> 2. **Explicit Chat Response & Artifact Generation (No Blank Calls)**:
+>    - **NEVER** call `ask_question` with empty message content or `content: None`.
+>    - Agent MUST generate a user-facing artifact `<appDataDir>/brain/<conversation-id>/TEAM_EXECUTION_BRIEF.md` containing the complete proposal plan.
+>    - In the **same turn** as calling `ask_question`, agent MUST output the full markdown **Team Execution Brief** directly in the visible chat response so the user can review all details and click the updated GitHub issue link right alongside the confirmation buttons.
+
+### Team Execution Brief Structure:
+- **GitHub Issue Link**: Clickable link to updated/created issue (e.g. `[#158](https://github.com/Huythanh0x/course_deals_ComposeMultiplatform/issues/158)`)
 - **Scope**: Backend / Android / Full-Stack
-- **Issue Plan**: Proposed issue title(s) and labels (or existing issue `#N`)
+- **Problem & Motivation**: User value & objective
 - **Use Cases & 4-Quadrant Test Scenarios**: Summary of Happy, Failed, Error, and Related scenarios
 - **GUI Framework Test Plan**: Maestro E2E flow outline for Android and iOS
 - **API Contract** (if applicable): Endpoint(s) and JSON DTO schema
@@ -170,26 +191,22 @@ Do **not** proceed to Phase 2 until the user approves.
 
 Once approved at Checkpoint 1:
 
-1. **Create GitHub Issue(s) & Branches** (skip issue creation ONLY if the user provided existing issue number(s)):
-   - Follow `new-ticket` and `create-sub-issues` in the target repo(s):
-     - **Top-level feature issue**: MUST be added to GitHub Project [`Course Deals`](https://github.com/users/Huythanh0x/projects/4) (`--project "Course Deals"`). The issue body MUST include the **solution architecture plan** (problem & motivation, Use Cases, 4-quadrant test scenarios, GUI framework test specification, API/DTO contract, and DoD matrix).
-       ```bash
-       gh issue create -R Huythanh0x/<repo> --title "..." --label "type: ..." --label "priority: ..." --label "area: ..." --label "size: ..." --project "Course Deals" --body "..."
-       ```
-     - **Mandatory Active Sprint Stamping**: Immediately after creating the issue (or linking an existing one), stamp it to the currently active sprint on `Sprint` field (`PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q`) so no board item is left as "No Sprint":
-       ```bash
-       gh api graphql -f query='
-         mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $iterationId: String!) {
-           updateProjectV2ItemFieldValue(input: {
-             projectId: $projectId,
-             itemId: $itemId,
-             fieldId: $fieldId,
-             value: { iterationId: $iterationId }
-           }) { projectV2Item { id } }
-         }
-       ' -f projectId="PVT_kwHOBEROFc4BhjJ2" -f itemId="<PROJECT_ITEM_ID>" -f fieldId="PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q" -f iterationId="<ACTIVE_ITERATION_ID>"
-       ```
-     - **Sub-issues (for full-stack parent + child issues)**: Create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform` (or target repos). Each sub-issue body **MUST** specify its own concrete, domain-specific architecture and tech stack details (e.g. Spring Boot/Flyway/JPA/JobRunr for BE; Jetpack Compose/Clean Architecture/Hilt/Coroutines for App). Link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
+1. **Verify GitHub Issue(s), Active Sprint Stamping & Branches**:
+   - Ensure the top-level feature issue description contains the locked solution architecture plan (from Stop #1). If not already edited, edit now: `gh issue edit <issue-number> --body "..."`.
+   - **Mandatory Active Sprint Stamping**: Immediately after creating the issue (or linking an existing one), stamp it to the currently active sprint on `Sprint` field (`PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q`) so no board item is left as "No Sprint":
+     ```bash
+     gh api graphql -f query='
+       mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $iterationId: String!) {
+         updateProjectV2ItemFieldValue(input: {
+           projectId: $projectId,
+           itemId: $itemId,
+           fieldId: $fieldId,
+           value: { iterationId: $iterationId }
+         }) { projectV2Item { id } }
+       }
+     ' -f projectId="PVT_kwHOBEROFc4BhjJ2" -f itemId="<PROJECT_ITEM_ID>" -f fieldId="PVTIF_lAHOBEROFc4BhjJ2zhn_l1Q" -f iterationId="<ACTIVE_ITERATION_ID>"
+     ```
+   - **Sub-issues (for full-stack parent + child issues)**: Create parent (`--project "Course Deals"`) and both BE (`area: backend`) & App (`area: android`) sub-issues in `Huythanh0x/course_deals_ComposeMultiplatform` (or target repos). Each sub-issue body **MUST** specify its own concrete, domain-specific architecture and tech stack details (e.g. Spring Boot/Flyway/JPA/JobRunr for BE; Jetpack Compose/Clean Architecture/Hilt/Coroutines for App). Link via the Sub-issues REST API, and run the GraphQL board auto-cascade cleanup so sub-issues don't clutter the `"Course Deals"` board.
    - In each target repo, checkout latest `main`, pull, and create the branch `<type>/<issue-number>-<slug>`:
      ```bash
      git -C <repo-path> checkout main && git -C <repo-path> pull origin main
