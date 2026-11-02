@@ -32,6 +32,12 @@ class SecurityConfigTest {
     }
 
     @Test
+    fun `GET app config is public`() {
+        mockMvc.perform(get("/api/v1/app/config"))
+            .andExpect(status().isOk)
+    }
+
+    @Test
     fun `auth endpoints are reachable without authentication`() {
         // A malformed body may still get rejected (400) by request validation - the point of
         // this test is only that it isn't blocked by the security layer itself (401/403).

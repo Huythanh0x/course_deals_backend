@@ -50,6 +50,7 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers("/error").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/app/config").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/courses/*/reports").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/v1/courses/*/reports").permitAll()

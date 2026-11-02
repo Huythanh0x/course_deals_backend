@@ -43,3 +43,12 @@ custom:
     rp-id: ${WEBAUTHN_RP_ID:coursedeal.thanh0x.com}
     rp-name: ${WEBAUTHN_RP_NAME:Course Deal}
     origins: ${WEBAUTHN_ORIGINS:https://coursedeal.thanh0x.com}
+  app-config:
+    min-supported-version-code: ${APP_CONFIG_MIN_SUPPORTED_VERSION_CODE:105}
+    latest-version-code: ${APP_CONFIG_LATEST_VERSION_CODE:106}
+    force-update-url: ${APP_CONFIG_FORCE_UPDATE_URL:https://play.google.com/store/apps/details?id=com.thanh0x.coursedeals}
+    feature-flags:
+      client-verification-enabled: ${APP_CONFIG_FF_CLIENT_VERIFICATION_ENABLED:false}
+      community-reports-enabled: ${APP_CONFIG_FF_COMMUNITY_REPORTS_ENABLED:true}
+      prefer-external-browser-checkout: ${APP_CONFIG_FF_PREFER_EXTERNAL_BROWSER_CHECKOUT:false}
+      enroll-flow-report-threshold: ${APP_CONFIG_FF_ENROLL_FLOW_REPORT_THRESHOLD:0.3}
