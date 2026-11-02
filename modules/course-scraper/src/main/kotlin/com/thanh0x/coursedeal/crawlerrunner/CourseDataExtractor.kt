@@ -16,6 +16,7 @@ import java.time.format.DateTimeParseException
 /**
  * A class that extracts course coupon data from the provided coupon URL.
  */
+@Suppress("TooManyFunctions")
 class CourseDataExtractor {
     private val log = logger()
     private val couponUrl: String
@@ -65,11 +66,12 @@ class CourseDataExtractor {
             return -1
         }
 
-        // Try body data attribute (modern Udemy pages) first, then fall back to searching the
-        // whole HTML for the native deeplink token.
+        val html = document.html()
         val resolvedId =
             document.body().attr("data-clp-course-id").toIntOrNull()
-                ?: extractCourseIdFromDiscoverDeeplink(document.html()).takeIf { it > 0 }
+                ?: extractCourseIdFromDiscoverDeeplink(html).takeIf { it > 0 }
+                ?: extractCourseIdFromNextData(html).takeIf { it > 0 }
+                ?: extractCourseIdFromImage(html).takeIf { it > 0 }
 
         if (resolvedId == null) {
             log.warn("Course id not found in HTML for {}", couponUrl)
@@ -82,15 +84,32 @@ class CourseDataExtractor {
         return DISCOVER_DEEPLINK_ID_REGEX.find(html)?.groupValues?.get(1)?.toIntOrNull() ?: -1
     }
 
+    private fun extractCourseIdFromNextData(html: String?): Int {
+        if (html.isNullOrEmpty()) return -1
+        val regex = Regex(""""course"\s*:\s*\{\s*"id"\s*:\s*"?(\d+)"?""")
+        return regex.find(html)?.groupValues?.get(1)?.toIntOrNull() ?: -1
+    }
+
+    private fun extractCourseIdFromImage(html: String?): Int {
+        if (html.isNullOrEmpty()) return -1
+        val regex = Regex("""udemycdn\.com/course/\d+x\d+/(\d+)_""")
+        return regex.find(html)?.groupValues?.get(1)?.toIntOrNull() ?: -1
+    }
+
     /**
-     * Extracts the coupon code from a given coupon URL by splitting the URL at "/?couponCode="
-     * and returning the second element of the resulting array.
+     * Extracts the coupon code from a given coupon URL by parsing the query parameter.
      *
      * @return the extracted coupon code
      */
     private fun extractCouponCode(): String {
-        val parts = couponUrl.split("/?couponCode=")
-        return if (parts.size > 1) parts[1] else ""
+        val query = couponUrl.substringAfter('?', "")
+        if (query.isEmpty()) return ""
+        return query.split('&')
+            .firstOrNull { it.startsWith("couponCode=", ignoreCase = true) }
+            ?.substringAfter('=')
+            ?.substringBefore('&')
+            ?.substringBefore('#')
+            ?: ""
     }
 
     /**
@@ -154,8 +173,8 @@ class CourseDataExtractor {
      * @param couponJsonObject JSON object containing coupon data
      * @return CouponJsonData object with extracted data
      */
+    @Suppress("ReturnCount")
     private fun extractDataCouponFromOfficialAPI(couponJsonObject: JSONObject?): CouponJsonData? {
-        // Udemy now sometimes returns payloads like: {"detail":"Not found"}
         if (couponJsonObject == null || couponJsonObject.has("detail")) return null
 
         val pricingResultObj =
@@ -169,9 +188,17 @@ class CourseDataExtractor {
             null
         } else {
             val campaignObj = pricingResultObj.optJSONObject("campaign")
+            val usesRemaining = campaignObj?.optInt("uses_remaining", 0) ?: 0
+            if (couponCode.isNotBlank() && campaignObj == null && price != 0f) {
+                log.info("Coupon code {} is expired or has no active campaign on course {}", couponCode, courseId)
+                return null
+            }
+            if (campaignObj != null && usesRemaining <= 0) {
+                log.info("Coupon code {} on course {} has 0 uses remaining", couponCode, courseId)
+                return null
+            }
             val expiredDate = parseExpiredDate(campaignObj?.optString("end_time", null))
             val (previewImage, previewVideo) = extractPreviewAssets(couponJsonObject)
-            val usesRemaining = campaignObj?.optInt("uses_remaining", 0) ?: 0
             CouponJsonData(price, expiredDate, previewImage, previewVideo, usesRemaining)
         }
     }
