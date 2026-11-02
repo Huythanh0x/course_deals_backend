@@ -5,6 +5,7 @@ import com.thanh0x.coursedeal.dto.CouponDetailDTO
 import com.thanh0x.coursedeal.dto.CouponQueryDTO
 import com.thanh0x.coursedeal.dto.CouponRequestDTO
 import com.thanh0x.coursedeal.dto.PagedCouponResponseDTO
+import com.thanh0x.coursedeal.exception.BadRequestException
 import com.thanh0x.coursedeal.service.CourseResponseService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -48,6 +49,54 @@ class CouponCourseController(
         @ModelAttribute queryDto: CouponQueryDTO,
     ): PagedCouponResponseDTO {
         return courseResponseService.listCoupons(queryDto)
+    }
+
+    @GetMapping("/hot-deals")
+    @Operation(
+        summary = "Get hot deals sorted by student count with preference fallback (public)",
+        description =
+            "Returns active courses with rating >= minRating sorted by students DESC. " +
+                "If preference is specified, filters by category or title matching preference, " +
+                "falling back to global hot deals if no matches are found.",
+    )
+    fun getHotDeals(
+        @Parameter(description = "Category or title keyword preference filter", example = "development")
+        @RequestParam(name = "preference", required = false, defaultValue = "")
+        preference: String?,
+        @Parameter(description = "Minimum course rating (>= 0.0)", example = "4.7")
+        @RequestParam(name = "minRating", required = false, defaultValue = "4.7")
+        minRating: Float,
+        @Parameter(description = "0-based page index", example = "0")
+        @RequestParam(name = "pageIndex", required = false, defaultValue = "0")
+        pageIndex: Int,
+        @Parameter(description = "Number of items per page", example = "20")
+        @RequestParam(name = "numberPerPage", required = false, defaultValue = "20")
+        numberPerPage: Int,
+    ): PagedCouponResponseDTO {
+        validateHotDealsParameters(pageIndex, numberPerPage, minRating)
+        return courseResponseService.getHotDeals(
+            preference = preference,
+            minRating = minRating,
+            pageIndex = pageIndex,
+            numberPerPage = numberPerPage,
+        )
+    }
+
+    private fun validateHotDealsParameters(
+        pageIndex: Int,
+        numberPerPage: Int,
+        minRating: Float,
+    ) {
+        val errorMessage =
+            when {
+                pageIndex < 0 -> "Page index cannot be negative"
+                numberPerPage <= 0 -> "Number per page must be greater than zero"
+                minRating < 0f -> "Minimum rating cannot be negative"
+                else -> null
+            }
+        if (errorMessage != null) {
+            throw BadRequestException(errorMessage)
+        }
     }
 
     /**

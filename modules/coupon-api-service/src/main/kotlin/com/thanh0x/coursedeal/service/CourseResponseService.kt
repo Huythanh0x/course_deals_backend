@@ -94,6 +94,66 @@ class CourseResponseService(
     }
 
     /**
+     * Retrieves hot deals with rating >= minRating sorted by students DESC.
+     * If preference is provided, queries matching category/title; if no results match,
+     * falls back to the global hot deals query.
+     */
+    fun getHotDeals(
+        preference: String?,
+        minRating: Float,
+        pageIndex: Int,
+        numberPerPage: Int,
+    ): PagedCouponResponseDTO {
+        if (pageIndex < 0 || numberPerPage <= 0 || minRating < 0f) {
+            throw BadRequestException("Invalid hot deals query parameters")
+        }
+
+        val pageable =
+            PageRequest.of(
+                pageIndex,
+                Math.min(numberPerPage, Constant.MAX_PAGE_SIZE),
+            )
+        val now = Instant.now()
+
+        val page: Page<CouponCourseData> =
+            if (!preference.isNullOrBlank()) {
+                val prefPage =
+                    couponCourseRepository.findHotDealsByPreference(
+                        preference = preference.trim(),
+                        minRating = minRating,
+                        now = now,
+                        pageable = pageable,
+                    )
+                if (prefPage.isEmpty) {
+                    log.debug("No hot deals found for preference '{}', falling back to global hot deals", preference)
+                    couponCourseRepository.findHotDeals(
+                        minRating = minRating,
+                        now = now,
+                        pageable = pageable,
+                    )
+                } else {
+                    prefPage
+                }
+            } else {
+                couponCourseRepository.findHotDeals(
+                    minRating = minRating,
+                    now = now,
+                    pageable = pageable,
+                )
+            }
+
+        val dtos = page.content.map { couponMapper.toSummaryDto(it) }
+
+        return PagedCouponResponseDTO(
+            LastFetchTimeManager.loadLasFetchedTimeInMilliSecond(),
+            page.totalElements,
+            page.totalPages,
+            page.pageable.pageNumber,
+            dtos,
+        )
+    }
+
+    /**
      * Creates a Sort object based on the provided sort field and order.
      */
     private fun createSort(
