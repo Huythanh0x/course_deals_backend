@@ -10,8 +10,11 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 /**
  * REST controller for user account lifecycle management (e.g. account deletion / GDPR).
@@ -24,6 +27,29 @@ class UserController(
     private val userRepository: UserRepository,
     private val userSessionService: UserSessionService,
 ) {
+    @PostMapping("/me/accept-terms")
+    @Transactional
+    @Operation(
+        summary = "Accept Terms of Service and Privacy Policy",
+        description =
+            "Records the UTC timestamp when the authenticated user accepted Terms of Service and Privacy Policy.",
+    )
+    fun acceptTerms(
+        @AuthenticationPrincipal user: UserEntity,
+    ): ResponseEntity<Map<String, String>> {
+        val managedUser = userRepository.findById(user.id).orElse(user)
+        if (managedUser.termsAcceptedAt == null) {
+            managedUser.termsAcceptedAt = LocalDateTime.now(ZoneOffset.UTC)
+            userRepository.save(managedUser)
+        }
+        return ResponseEntity.ok(
+            mapOf(
+                "message" to "Terms of Service and Privacy Policy accepted",
+                "termsAcceptedAt" to managedUser.termsAcceptedAt.toString(),
+            ),
+        )
+    }
+
     @DeleteMapping("/me")
     @Transactional
     @Operation(

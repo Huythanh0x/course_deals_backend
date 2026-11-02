@@ -114,7 +114,6 @@ class EmailAuthService(
         }
 
         val existingUser = userRepository.findByEmail(email)
-        val isNewUser = (existingUser == null)
         val user =
             if (existingUser != null) {
                 if (pending.passwordHash.isNotBlank()) {
@@ -139,6 +138,7 @@ class EmailAuthService(
                 )
             }
 
+        val isNewUser = (user.termsAcceptedAt == null)
         redisTemplate.delete(key)
         return issueAuthResponse(user, isNewUser)
     }
@@ -160,7 +160,7 @@ class EmailAuthService(
             userRepository.save(user)
         }
 
-        return issueAuthResponse(user)
+        return issueAuthResponse(user, user.termsAcceptedAt == null)
     }
 
     private fun loadPendingRegistration(key: String): PendingRegistration {

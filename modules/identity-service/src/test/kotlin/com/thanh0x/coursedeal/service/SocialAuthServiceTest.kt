@@ -18,6 +18,7 @@ import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
+import java.time.LocalDateTime
 
 class SocialAuthServiceTest {
     private val userRepository = mock(UserRepository::class.java)
@@ -66,9 +67,14 @@ class SocialAuthServiceTest {
     }
 
     @Test
-    fun `login with existing user returns isNewUser false`() {
+    fun `login with existing user who accepted terms returns isNewUser false`() {
         properties.mockAuthEnabled = true
-        val existing = UserEntity(id = 10, email = "existing@example.com")
+        val existing =
+            UserEntity(
+                id = 10,
+                email = "existing@example.com",
+                termsAcceptedAt = LocalDateTime.of(2026, 11, 2, 0, 0),
+            )
         `when`(userRepository.findByEmail("existing@example.com")).thenReturn(existing)
 
         val request =
@@ -81,6 +87,29 @@ class SocialAuthServiceTest {
 
         assertNotNull(response)
         assertEquals(false, response.isNewUser)
+    }
+
+    @Test
+    fun `login with existing user whose termsAcceptedAt is null returns isNewUser true`() {
+        properties.mockAuthEnabled = true
+        val existing =
+            UserEntity(
+                id = 11,
+                email = "noterms@example.com",
+                termsAcceptedAt = null,
+            )
+        `when`(userRepository.findByEmail("noterms@example.com")).thenReturn(existing)
+
+        val request =
+            SocialLoginRequestDTO(
+                provider = AuthProvider.GOOGLE,
+                idToken = "mock-noterms@example.com",
+            )
+
+        val response = service.login(request)
+
+        assertNotNull(response)
+        assertEquals(true, response.isNewUser)
     }
 
     @Test
