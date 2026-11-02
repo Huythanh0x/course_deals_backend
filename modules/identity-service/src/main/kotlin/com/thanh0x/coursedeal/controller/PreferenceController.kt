@@ -6,6 +6,7 @@ import com.thanh0x.coursedeal.model.user.UserPreference
 import com.thanh0x.coursedeal.repository.UserPreferenceRepository
 import com.thanh0x.coursedeal.repository.UserRepository
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -32,11 +33,12 @@ class PreferenceController(
 ) {
     @GetMapping
     @Operation(
+        operationId = "getPreferences",
         summary = "Get the current user's notification preferences",
         description = "Creates and returns a default preference (notifications enabled, no filters) if none exists.",
     )
     fun getPreferences(
-        @AuthenticationPrincipal user: UserEntity,
+        @Parameter(hidden = true) @AuthenticationPrincipal user: UserEntity,
     ): ResponseEntity<PreferenceDTO> {
         val preference =
             userPreferenceRepository.findById(user.id)
@@ -47,11 +49,12 @@ class PreferenceController(
 
     @PutMapping
     @Operation(
+        operationId = "updatePreferences",
         summary = "Replace the current user's notification preferences",
         description = "Fully replaces categories, keywords, and notificationsEnabled (not a partial merge).",
     )
     fun updatePreferences(
-        @AuthenticationPrincipal user: UserEntity,
+        @Parameter(hidden = true) @AuthenticationPrincipal user: UserEntity,
         @Valid @RequestBody dto: PreferenceDTO,
     ): ResponseEntity<PreferenceDTO> {
         val preference =

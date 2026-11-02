@@ -44,3 +44,10 @@ tasks.register<Exec>("bootRunLocal") {
     description = "Runs both API service and Crawler service in parallel with local profile"
     commandLine("bash", "scripts/bootRunLocal.sh")
 }
+
+tasks.register("exportOpenApiSpec") {
+    group = "openapi"
+    description = "Exports the SpringDoc OpenAPI specification to openapi/openapi.json"
+    dependsOn(":modules:coupon-api-service:exportOpenApiSpec")
+}
+

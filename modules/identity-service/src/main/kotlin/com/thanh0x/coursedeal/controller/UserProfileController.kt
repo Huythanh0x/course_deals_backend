@@ -8,6 +8,7 @@ import com.thanh0x.coursedeal.model.user.UserPreference
 import com.thanh0x.coursedeal.repository.UserPreferenceRepository
 import com.thanh0x.coursedeal.repository.UserRepository
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -32,11 +33,12 @@ class UserProfileController(
 ) {
     @GetMapping
     @Operation(
+        operationId = "getProfile",
         summary = "Get the current authenticated user's profile",
         description = "Returns user identity details (name, email, avatar, fcmToken) and preferences.",
     )
     fun getProfile(
-        @AuthenticationPrincipal user: UserEntity,
+        @Parameter(hidden = true) @AuthenticationPrincipal user: UserEntity,
     ): ResponseEntity<UserProfileDTO> {
         val managedUser = userRepository.findById(user.id).orElse(user)
         val preference =
@@ -48,11 +50,12 @@ class UserProfileController(
 
     @PutMapping
     @Operation(
+        operationId = "updateProfile",
         summary = "Update the current user's profile",
         description = "Updates user identity details. Non-null fields overwrite existing values.",
     )
     fun updateProfile(
-        @AuthenticationPrincipal user: UserEntity,
+        @Parameter(hidden = true) @AuthenticationPrincipal user: UserEntity,
         @Valid @RequestBody request: UpdateUserProfileRequestDTO,
     ): ResponseEntity<UserProfileDTO> {
         val managedUser = userRepository.findById(user.id).orElse(user)

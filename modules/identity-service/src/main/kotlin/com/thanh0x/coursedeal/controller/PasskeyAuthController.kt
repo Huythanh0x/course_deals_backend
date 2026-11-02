@@ -6,6 +6,9 @@ import com.yubico.webauthn.AssertionRequest
 import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,11 +32,17 @@ import org.springframework.web.bind.annotation.RestController
 class PasskeyAuthController(private val passkeyService: PasskeyService) {
     @GetMapping("/registration/options")
     @Operation(
+        operationId = "getPasskeyRegistrationOptions",
         summary = "Step 1 of 2: get passkey registration options",
         description =
             "Returns a PublicKeyCredentialCreationOptions challenge to pass to the platform's " +
                 "passkey creation API. The result is cached server-side (Redis, 5 min TTL) keyed " +
                 "by email, matched by /registration/finish.",
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "WebAuthn PublicKeyCredentialCreationOptions JSON payload",
+        content = [Content(schema = Schema(type = "string"))],
     )
     fun getRegistrationOptions(
         @Parameter(description = "Email identifying the user creating a passkey") @RequestParam email: String,
@@ -45,6 +54,7 @@ class PasskeyAuthController(private val passkeyService: PasskeyService) {
 
     @PostMapping("/registration/finish")
     @Operation(
+        operationId = "finishPasskeyRegistration",
         summary = "Step 2 of 2: complete passkey registration",
         description =
             "Submit the platform's attestation response (as JSON) for the challenge obtained from " +
@@ -60,8 +70,14 @@ class PasskeyAuthController(private val passkeyService: PasskeyService) {
 
     @GetMapping("/authentication/options")
     @Operation(
+        operationId = "getPasskeyAuthenticationOptions",
         summary = "Step 1 of 2: get passkey authentication (login) options",
         description = "Returns an AssertionRequest challenge to pass to the platform's passkey get() API.",
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "WebAuthn AssertionRequest JSON payload",
+        content = [Content(schema = Schema(type = "string"))],
     )
     fun getAuthenticationOptions(
         @Parameter(description = "Email of the user logging in") @RequestParam email: String,
@@ -71,6 +87,7 @@ class PasskeyAuthController(private val passkeyService: PasskeyService) {
 
     @PostMapping("/authentication/finish")
     @Operation(
+        operationId = "finishPasskeyAuthentication",
         summary = "Step 2 of 2: complete passkey authentication and get a JWT",
         description =
             "Submit the platform's assertion response (as JSON) for the challenge obtained from " +

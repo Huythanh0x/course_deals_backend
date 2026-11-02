@@ -1,5 +1,6 @@
 package com.thanh0x.coursedeal.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.thanh0x.coursedeal.model.coupon.CourseLevel
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -47,7 +48,8 @@ data class CouponDetailDTO(
     @Schema(description = "Instructional language of the course")
     val language: String? = null,
     @get:JvmName("isNew")
-    @Schema(description = "Flag indicating if this is a newly discovered coupon")
+    @get:JsonProperty("isNew")
+    @field:Schema(name = "isNew", description = "Flag indicating if this is a newly discovered coupon")
     val isNew: Boolean = false,
     @Schema(description = "Unix timestamp (seconds) when the coupon was discovered", example = "1785660439")
     val createdAt: Long? = null,

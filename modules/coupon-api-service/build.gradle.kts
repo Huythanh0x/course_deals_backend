@@ -50,3 +50,20 @@ dependencies {
     testImplementation(libs.h2)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
+
+tasks.withType<Test> {
+    systemProperty("openapi.output.file", rootProject.file("openapi/openapi.json").absolutePath)
+}
+
+tasks.register<Test>("exportOpenApiSpec") {
+    group = "openapi"
+    description = "Exports the SpringDoc OpenAPI specification to openapi/openapi.json"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("com.thanh0x.coursedeal.openapi.OpenApiExportTest")
+    }
+    systemProperty("openapi.output.file", rootProject.file("openapi/openapi.json").absolutePath)
+    outputs.upToDateWhen { false }
+}
