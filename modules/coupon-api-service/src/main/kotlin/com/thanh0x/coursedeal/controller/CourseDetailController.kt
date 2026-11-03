@@ -34,6 +34,7 @@ class CourseDetailController(private val courseDetailService: CourseDetailServic
      */
     @GetMapping("/{courseId}/details")
     @Operation(
+        operationId = "getCourseDetails",
         summary = "Get comprehensive course details",
         description = "Returns detailed course information including reviews, curriculum, pricing, and related courses",
     )
@@ -56,6 +57,7 @@ class CourseDetailController(private val courseDetailService: CourseDetailServic
      */
     @GetMapping("/{courseId}/reviews")
     @Operation(
+        operationId = "getCourseReviews",
         summary = "Get course reviews",
         description = "Returns paginated course reviews with instructor responses",
     )
@@ -78,6 +80,7 @@ class CourseDetailController(private val courseDetailService: CourseDetailServic
      */
     @GetMapping("/{courseId}/curriculum")
     @Operation(
+        operationId = "getCourseCurriculum",
         summary = "Get course curriculum",
         description = "Returns the course curriculum/syllabus with all sections and lectures",
     )
@@ -99,6 +102,7 @@ class CourseDetailController(private val courseDetailService: CourseDetailServic
      */
     @GetMapping("/{courseId}/related")
     @Operation(
+        operationId = "getRelatedCourses",
         summary = "Get related courses",
         description = "Returns a list of related/recommended courses",
     )

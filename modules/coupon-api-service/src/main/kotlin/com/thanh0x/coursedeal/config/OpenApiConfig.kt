@@ -1,11 +1,16 @@
 package com.thanh0x.coursedeal.config
 
+import com.thanh0x.coursedeal.model.user.UserEntity
+import com.yubico.webauthn.AssertionRequest
+import com.yubico.webauthn.data.PublicKeyCredentialCreationOptions
 import io.swagger.v3.oas.annotations.OpenAPIDefinition
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
 import io.swagger.v3.oas.annotations.info.Contact
 import io.swagger.v3.oas.annotations.info.Info
 import io.swagger.v3.oas.annotations.info.License
 import io.swagger.v3.oas.annotations.security.SecurityScheme
+import jakarta.servlet.http.HttpServletRequest
+import org.springdoc.core.utils.SpringDocUtils
 import org.springframework.context.annotation.Configuration
 
 @Configuration
@@ -29,4 +34,11 @@ import org.springframework.context.annotation.Configuration
             "(/api/v1/auth/passkey/authentication/finish). Send as `Authorization: Bearer <token>` " +
             "on every request to an endpoint marked with the lock icon below.",
 )
-class OpenApiConfig
+class OpenApiConfig {
+    init {
+        SpringDocUtils.getConfig()
+            .addRequestWrapperToIgnore(UserEntity::class.java, HttpServletRequest::class.java)
+            .replaceWithClass(PublicKeyCredentialCreationOptions::class.java, String::class.java)
+            .replaceWithClass(AssertionRequest::class.java, String::class.java)
+    }
+}

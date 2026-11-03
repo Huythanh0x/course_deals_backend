@@ -4,6 +4,7 @@ import com.thanh0x.coursedeal.model.user.UserEntity
 import com.thanh0x.coursedeal.repository.UserRepository
 import com.thanh0x.coursedeal.service.UserSessionService
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
@@ -30,12 +31,13 @@ class UserController(
     @PostMapping("/me/accept-terms")
     @Transactional
     @Operation(
+        operationId = "acceptTerms",
         summary = "Accept Terms of Service and Privacy Policy",
         description =
             "Records the UTC timestamp when the authenticated user accepted Terms of Service and Privacy Policy.",
     )
     fun acceptTerms(
-        @AuthenticationPrincipal user: UserEntity,
+        @Parameter(hidden = true) @AuthenticationPrincipal user: UserEntity,
     ): ResponseEntity<Map<String, String>> {
         val managedUser = userRepository.findById(user.id).orElse(user)
         if (managedUser.termsAcceptedAt == null) {
@@ -53,12 +55,13 @@ class UserController(
     @DeleteMapping("/me")
     @Transactional
     @Operation(
+        operationId = "deleteMyAccount",
         summary = "Delete the current authenticated user's account",
         description =
             "Permanently deletes user account, cascade relations, and invalidates all active sessions.",
     )
     fun deleteMyAccount(
-        @AuthenticationPrincipal user: UserEntity,
+        @Parameter(hidden = true) @AuthenticationPrincipal user: UserEntity,
     ): ResponseEntity<Map<String, String>> {
         userSessionService.invalidateAllUserSessions(user.id)
         userRepository.deleteById(user.id)
