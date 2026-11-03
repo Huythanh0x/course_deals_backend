@@ -59,8 +59,8 @@ graph TD
 
 ## Bootstrap the Project
 ```bash
-git clone https://github.com/huythanh0x/course-deal-server
-cd course-deal-server
+git clone https://github.com/Huythanh0x/course_deals_backend.git
+cd course_deals_backend
 ```
 
 ### Option A: Production Stack via Docker
@@ -76,9 +76,12 @@ docker compose -f docker-compose.local.yml up -d
 ```
 2. Run services from source:
 ```bash
+# Run API (port 8080) and Crawler (port 8081) on local profile
 ./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=local'
-# In a separate terminal
 ./gradlew :modules:coupon-crawler-service:bootRun --args='--spring.profiles.active=local'
+
+# Or run the isolated Mobile-Local E2E test stack (API on 8081, Crawler on 8082, DB training_coupon_mobile_local, Redis DB 1):
+bash scripts/bootRunMobileLocal.sh
 ```
 
 ## Database Migrations
@@ -149,9 +152,11 @@ Passkeys use FIDO2 challenge/assertion ceremonies (public endpoints under `/api/
 
 ## Useful Gradle Tasks
 - `./gradlew build` – clean build and compile all 9 modules.
-- `./gradlew test` – runs the test suite (includes **SSRF Hardening**, **Auth**, **SecurityConfig**, and background-job tests).
+- `./gradlew test` – runs the test suite (includes **SSRF Hardening**, **Auth**, **SecurityConfig**, **OpenApiExportTest**, and background-job tests).
 - `./gradlew ktlintCheck detekt` – lint and static analysis (see [Code Style](../CONTRIBUTING.md#code-style) in CONTRIBUTING.md).
+- `./gradlew exportOpenApiSpec` – deterministically exports `openapi/openapi.json` via MockMvc under the `test` profile for KMP client codegen.
 - `./gradlew flywayMigrate` – manually trigger database schema updates.
+- `bash scripts/release-build.sh --version 1.0.0 --service all` – builds runnable Spring Boot JARs and optional Docker images with SHA256 checksums.
 
 ## API & Debugging
 - **Swagger UI (local):** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)

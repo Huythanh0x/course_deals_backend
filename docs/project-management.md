@@ -79,12 +79,12 @@ An issue isn't done when the code works locally. It's done when:
 
 ## Setup status
 
-This doc set describes the target process. Implementation status as of 2026-08-30:
+This doc set describes the target process. Implementation status:
 
 - [x] Docs (`README.md` index + `/docs/*`) in place
 - [x] Issue/PR templates in place (`.github/`)
-- [x] CI workflow in place (`.github/workflows/ci-cd.yml`)
-- [ ] Labels created on GitHub — run [`scripts/gh-setup-labels.sh`](../scripts/gh-setup-labels.sh)
-- [ ] Branch protection on `main` — run [`scripts/gh-setup-branch-protection.sh`](../scripts/gh-setup-branch-protection.sh)
-- [ ] Shared GitHub Projects board (this repo + `course_deals_ComposeMultiplatform`) — see [`scripts/gh-setup-project-board.sh`](../scripts/gh-setup-project-board.sh)
+- [x] CI & Release CD workflows in place (`.github/workflows/ci-cd.yml`, `.github/workflows/release-cd.yml`)
+- [x] Labels created on GitHub — see [`scripts/gh-setup-labels.sh`](../scripts/gh-setup-labels.sh)
+- [x] Branch protection on `main` — see [`scripts/gh-setup-branch-protection.sh`](../scripts/gh-setup-branch-protection.sh)
+- [x] Shared GitHub Projects board (this repo + `course_deals_ComposeMultiplatform`) — see [`scripts/gh-setup-project-board.sh`](../scripts/gh-setup-project-board.sh)
 - [x] Same doc set forked/tailored from `course_deals_ComposeMultiplatform` into this repo

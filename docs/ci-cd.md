@@ -26,17 +26,16 @@ Configure this job as a **required status check** in the repo's branch protectio
 settings for `main` — this makes the gate structural, not a habit you can forget under
 time pressure. See [`scripts/gh-setup-branch-protection.sh`](../scripts/gh-setup-branch-protection.sh).
 
-## CD pipeline (runs on push to `main`, or on tagging a release)
+## CD pipeline (runs on tagging a release `v*.*.*` or manual dispatch, see `.github/workflows/release-cd.yml`)
 
-- CI pushes `api-latest`/`crawler-latest` images to Docker Hub on every merge to `main`,
-  and `api-vX.Y.Z`/`crawler-vX.Y.Z` images when a `vX.Y.Z` tag is pushed.
-- Actual deployment to the production VPS is a **separate, deliberate pull**, not
-  push-driven from CI: [`scripts/autodeploy.sh`](../scripts/autodeploy.sh) runs on the
-  server (e.g. via cron), does `docker compose -f docker-compose.prod.yml pull`, and only
-  if a newer image was actually downloaded does it restart the stack
-  (`docker compose ... up -d`) and prune old images. This means a pushed image doesn't
-  reach production instantly — there's a bounded delay until the next poll, which is a
-  deliberate buffer, not a bug.
+- **Automated Release Packaging (`.github/workflows/release-cd.yml` & `scripts/release-build.sh`)**:
+  - Triggered on pushing a `vX.Y.Z` tag or via `workflow_dispatch`.
+  - Builds executable Spring Boot JARs (`coupon-api-service-<ver>.jar`, `coupon-crawler-service-<ver>.jar`).
+  - Builds and pushes multi-arch (`linux/amd64`, `linux/arm64`) Docker images (`api-v<ver>`, `crawler-v<ver>`, and `-latest` for stable releases) to Docker Hub when `DOCKER_HUB_USERNAME`/`DOCKER_HUB_TOKEN` secrets are configured.
+  - Computes `SHA256SUMS.txt` and publishes the runnable JARs and checksums directly to **GitHub Releases**.
+  - Can also be run locally via `bash scripts/release-build.sh --version 1.0.0 --service all`.
+- **Production VPS Auto-Deploy**:
+  - Actual deployment to the production VPS is a **separate, deliberate pull**, not push-driven from CI: [`scripts/autodeploy.sh`](../scripts/autodeploy.sh) runs on the server (e.g. via cron), does `docker compose -f docker-compose.prod.yml pull`, and only if a newer image was actually downloaded does it restart the stack (`docker compose ... up -d`) and prune old images.
 
 ## Secrets
 
