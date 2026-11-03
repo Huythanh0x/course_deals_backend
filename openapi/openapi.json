@@ -1662,6 +1662,70 @@
         "tags" : [ "Coupons" ]
       }
     },
+    "/api/v1/coupons/hot-deals" : {
+      "get" : {
+        "description" : "Returns active courses with rating >= minRating sorted by students DESC. If preference is specified, filters by category or title matching preference, falling back to global hot deals if no matches are found.",
+        "operationId" : "getHotDeals",
+        "parameters" : [ {
+          "description" : "Minimum course rating (>= 0.0)",
+          "example" : 4.7,
+          "in" : "query",
+          "name" : "minRating",
+          "required" : false,
+          "schema" : {
+            "default" : 4.7,
+            "format" : "float",
+            "type" : "number"
+          }
+        }, {
+          "description" : "Number of items per page",
+          "example" : 20,
+          "in" : "query",
+          "name" : "numberPerPage",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "description" : "0-based page index",
+          "example" : 0,
+          "in" : "query",
+          "name" : "pageIndex",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "description" : "Category or title keyword preference filter",
+          "example" : "development",
+          "in" : "query",
+          "name" : "preference",
+          "required" : false,
+          "schema" : {
+            "default" : "",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedCouponResponseDTO"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get hot deals sorted by student count with preference fallback (public)",
+        "tags" : [ "Coupons" ]
+      }
+    },
     "/api/v1/coupons/{courseId}" : {
       "delete" : {
         "description" : "Always throws 501 Not Implemented - direct deletion is intentionally disabled.",

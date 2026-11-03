@@ -29,6 +29,38 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
     @Query(
         """
         SELECT c FROM CouponCourseData c WHERE 
+        (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.rating >= :minRating 
+        ORDER BY c.students DESC
+        """,
+    )
+    fun findHotDeals(
+        @Param("minRating") minRating: Float,
+        @Param("now") now: Instant,
+        pageable: Pageable,
+    ): Page<CouponCourseData>
+
+    @Query(
+        """
+        SELECT c FROM CouponCourseData c WHERE 
+        (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.rating >= :minRating AND (
+            LOWER(c.category) LIKE LOWER(CONCAT('%', :preference, '%')) OR 
+            LOWER(c.title) LIKE LOWER(CONCAT('%', :preference, '%'))
+        ) 
+        ORDER BY c.students DESC
+        """,
+    )
+    fun findHotDealsByPreference(
+        @Param("preference") preference: String,
+        @Param("minRating") minRating: Float,
+        @Param("now") now: Instant,
+        pageable: Pageable,
+    ): Page<CouponCourseData>
+
+    @Query(
+        """
+        SELECT c FROM CouponCourseData c WHERE 
         (c.expiredDate IS NULL OR c.expiredDate > :now) AND (
             LOWER(c.title) LIKE LOWER(CONCAT('%', :query, '%')) OR 
             LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%')) OR 
