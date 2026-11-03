@@ -16,10 +16,11 @@ and targeted push notifications.
 - Caching: Redis 7 (`modules/coupon-infrastructure`)
 - Background jobs: JobRunr 8.7.1 backed by Redis/SQL for coupon validation and retries
 - Scrapers: Jsoup, Udemy public API client (`modules/course-external-api`)
-- Authentication: Google & Apple ID token verification, WebAuthn / Passkeys (`webauthn-server-core`), JWT (`jjwt 0.11.5`)
+- Authentication: Email OTP, Google & Apple ID token verification, WebAuthn / Passkeys (`webauthn-server-core`), JWT (`jjwt 0.11.5`)
 - Notifications: Firebase Cloud Messaging (`firebase-admin 9.3.0`)
-- Documentation: SpringDoc OpenAPI 2.8.8 (Swagger UI at `/swagger-ui.html`)
-- Code quality & linting: Ktlint 1.0.1, Detekt 1.23.4
+- Observability: Sentry Spring Boot Starter (`sentry-spring-boot-starter-jakarta 7.22.0`, `ErrorTrackingReporter` in `coupon-common`)
+- Documentation & Codegen: SpringDoc OpenAPI 2.8.8 (Swagger UI at `/swagger-ui/index.html`, deterministic spec export to `openapi/openapi.json` via `./gradlew exportOpenApiSpec`)
+- Code quality & linting: Ktlint (`org.jlleitschuh.gradle.ktlint` 12.1.1), Detekt 1.23.4
 
 ## Module map
 
@@ -27,15 +28,15 @@ and targeted push notifications.
 
 | Module | Role |
 |---|---|
-| `modules:coupon-common` | Cross-cutting utilities, logging helpers, shared exception definitions |
+| `modules:coupon-common` | Cross-cutting utilities, logging helpers, Sentry `ErrorTrackingReporter`, shared exception definitions |
 | `modules:coupon-domain` | Pure data layer: JPA entities, repositories, DTOs, and Flyway migration scripts |
 | `modules:coupon-infrastructure` | Redis configuration, caching service (`RedisService`), and fetch time tracking |
 | `modules:notification-service` | Firebase Admin SDK setup and targeted push notifications (`NotificationService`) |
 | `modules:course-scraper` | Background validation pipeline (`CourseScraperService`), Jsoup data extraction (`CourseDataExtractor`) |
 | `modules:course-external-api` | Udemy REST API integration client (`ExternalCourseApiClient`) |
-| `modules:identity-service` | Auth controllers: Social OAuth2, Passkeys (WebAuthn), JWT handling, user preferences |
-| `modules:coupon-api-service` | Deployable application: Public REST API for querying, filtering, and searching coupons |
-| `modules:coupon-crawler-service` | Deployable application: Scheduled discovery crawlers (`CrawlerRunner`, `EnextCrawler`, `RealDiscountCrawler`) |
+| `modules:identity-service` | Auth controllers: Email OTP, Social OAuth2, Passkeys (WebAuthn), JWT handling, device tokens, user preferences |
+| `modules:coupon-api-service` | Deployable application: Public REST API for querying, filtering, hot-deals, remote config, and reporting coupons |
+| `modules:coupon-crawler-service` | Deployable application: Scheduled discovery & smart refresh crawlers (`CrawlerRunner`, `EnextCrawler`, `RealDiscountCrawler`) |
 
 ## Architecture & layer conventions
 
@@ -61,6 +62,8 @@ and targeted push notifications.
   - Stable Mobile-Local API Service (Port 8081, isolated DB & Redis index 1): `bash scripts/bootRunMobileLocal.sh` (or `./gradlew :modules:coupon-api-service:bootRun --args='--spring.profiles.active=mobile-local'`)
   - Crawler Service: `./gradlew :modules:coupon-crawler-service:bootRun --args='--spring.profiles.active=local'`
   - Run both dev services simultaneously: `./gradlew bootRunLocal` (or `bash scripts/bootRunLocal.sh`)
+- Release packaging (JARs + optional multi-arch Docker build + SHA256 checksums):
+  `bash scripts/release-build.sh --version 1.0.0 --service all`
 
 ## Git / GitHub workflow
 

@@ -19,29 +19,33 @@ If you have an idea for an enhancement or new feature, please open an issue on G
 2. **Clone Your Fork**: Clone your forked repository to your local machine.
 
 ```shell
-    git clone https://github.com/huythanh0x/course-deal-server.git
-    cd course-deal-server
+    git clone https://github.com/Huythanh0x/course_deals_backend.git
+    cd course_deals_backend
 ```
 
-3. **Create a Branch**: Create a new branch for your feature or bugfix.
+3. **Create a Branch**: Create a new branch for your feature or bugfix (`<type>/<issue-number>-<slug>`).
 
 ```shell
-    git checkout -b feature/your-feature-name
+    git checkout -b feat/42-your-feature-name
 ```
 
-4. **Make Your Changes**: Make your changes to the codebase.
+4. **Make Your Changes**: Make your changes to the codebase. If you modified REST controllers or DTOs, regenerate the OpenAPI spec:
 
-5. **Commit Your Changes**: Commit your changes with a clear and descriptive commit message.
+```shell
+    ./gradlew exportOpenApiSpec
+```
+
+5. **Commit Your Changes**: Commit your changes following [Conventional Commits](docs/commit-conventions.md).
 
 ```shell
     git add .
-    git commit -m "Add feature: your feature name"
+    git commit -m "feat(api): add your feature name"
 ```
 
 6. **Push to Your Fork**: Push your changes to your forked repository.
 
 ```shell
-    git push origin feature/your-feature-name
+    git push origin feat/42-your-feature-name
 ```
 
 7. **Open a Pull Request**: Go to the original repository and open a pull request. Provide a clear and descriptive title and description for your pull request.
