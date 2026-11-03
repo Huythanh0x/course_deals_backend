@@ -93,7 +93,11 @@ When invoked:
 3. **Pull Candidate Backlog Items**:
    - Query unassigned backlog items labeled `priority: P0` or `priority: P1`.
    - Calculate total points using `size: N` labels (Cap at **30–40 points** max).
-4. **Update Project Board**:
+4. **Multi-Platform Spec & Sub-Issue Pre-Check**:
+   - Verify every candidate feature ticket is structured as a Parent Issue on the board with the platform breakdown:
+     `+ Android`, `+ iOS`, `+ WatchOS if needed`, `+ BE if needed`, `+ Desktop if needed`.
+   - Confirm domain sub-issues are attached via `create-sub-issues` before commitment.
+5. **Update Project Board**:
    - Move approved issues to `"Ready"` / `"Todo"` status.
    - Stamp each approved issue with the target `iterationId`.
 

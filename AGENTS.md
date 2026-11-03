@@ -42,8 +42,7 @@ and targeted push notifications.
 - **Separation of Discovery & Processing**: `coupon-crawler-service` only discovers URLs; it does not perform deep scraping synchronously. It enqueues URLs into JobRunr via `CourseScraperService`.
 - **Background Jobs**: Asynchronous scraping and validation tasks run through JobRunr workers with audit logs saved to `scraping_task_logs`.
 - **Database Migrations**: All schema updates must be managed via Flyway migration scripts in `modules/coupon-domain/src/main/resources/db/migration/` (`V<timestamp>__<description>.sql`). Never alter JPA entities without matching Flyway migrations.
-- **REST Endpoints & Validation**: Use Jakarta Validation annotations on DTOs. Document public endpoints using OpenAPI / Swagger annotations (`@Tag`, explicit `@Operation(operationId = ...)` on every endpoint, and `@Parameter(hidden = true)` on internal Spring parameters like `@AuthenticationPrincipal UserEntity` or `HttpServletRequest` so they never leak into `openapi/openapi.json`). Return appropriate HTTP status codes (202 Accepted for async enqueue, 400 for invalid inputs, 404 for missing entities).
-- **OpenAPI Contract & Cross-Repo KMP Codegen**: Whenever REST controllers or DTOs change, run `./gradlew exportOpenApiSpec` to regenerate and commit `openapi/openapi.json` (exported deterministically via MockMvc under the `test` profile without requiring external MySQL/Redis). The companion `course_deals_ComposeMultiplatform` repository consumes this spec to generate Ktor client APIs and `kotlinx.serialization` DTOs.
+- **REST Endpoints & Validation**: Use Jakarta Validation annotations on DTOs. Document public endpoints using OpenAPI / Swagger annotations. Return appropriate HTTP status codes (202 Accepted for async enqueue, 400 for invalid inputs, 404 for missing entities).
 - **Exceptions**: Use domain exceptions defined in `coupon-common` or domain layers and let `@RestControllerAdvice` format standard error responses.
 
 ## Build & verify commands
@@ -51,7 +50,6 @@ and targeted push notifications.
 - Full build: `./gradlew build`
 - Run all unit tests: `./gradlew clean test`
 - Run module-specific tests: `./gradlew :modules:<module-name>:test` (e.g. `./gradlew :modules:coupon-domain:test`)
-- Export OpenAPI specification (`openapi/openapi.json`): `./gradlew exportOpenApiSpec`
 - Static analysis (lint & detekt):
   - Lint check: `./gradlew ktlintCheck`
   - Lint auto-format: `./gradlew ktlintFormat`
@@ -78,7 +76,7 @@ Full details in `/docs`:
 
 The `ticket-flow` skill runs the full lifecycle as a gated single-agent sequence — `new-ticket` (if needed) → `read-requirements` → `scan-related-code` → `confirm-edge-cases` → `implement-change` → `run-tests` → `capture-evidence` → `ship-pr` — stopping to report and confirm after every step, backed by a resumable per-ticket workspace under `.agents/tickets/` (git-ignored).
 
-The `team-flow` skill runs the same lifecycle using a **5-agent specialized team** across `course_deals_backend` and `course_deals_ComposeMultiplatform` (**PM/Architect**, `backend-engineer`, `android-engineer`, `security-arch-reviewer`, and `qa-release-engineer`) with only **2 human-in-the-loop checkpoints** (1: Approve Spec, API Contract & Edge Cases; 2: Ready to Merge PRs).
+The `team-flow` skill runs the same lifecycle using a **7-role specialized team** across `course_deals_backend` and `course_deals_ComposeMultiplatform` (**PM/Architect**, `backend-engineer`, `kmp-engineer`, `apple-developer` [iOS & watchOS], `desktop-engineer`, `security-arch-reviewer`, and `qa-release-engineer`) with only **2 human-in-the-loop checkpoints** (1: Approve Spec, API Contract & Edge Cases; 2: Ready to Merge PRs).
 
 The `sprint-flow` skill manages the **1-week solo developer sprint rhythm** (Monday–Saturday build & test, Sunday stop & plan) integrated with GitHub Projects:
 - [`docs/SPRINT_GUIDE.md`](docs/SPRINT_GUIDE.md) — 1-week sprint lifecycle, iteration conventions, and solo-dev DoD
