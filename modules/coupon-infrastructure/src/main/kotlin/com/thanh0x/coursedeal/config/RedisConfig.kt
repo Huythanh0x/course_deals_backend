@@ -1,10 +1,13 @@
 package com.thanh0x.coursedeal.config
 
+import com.thanh0x.coursedeal.service.LiveWatchersTracker
+import com.thanh0x.coursedeal.service.RedisLiveWatchersTracker
 import com.thanh0x.coursedeal.service.RedisService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 import org.springframework.data.redis.connection.RedisConnectionFactory
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory
@@ -57,5 +60,11 @@ class RedisConfig {
         // Set singleton instance for static access
         RedisService.instance = service
         return service
+    }
+
+    @Bean
+    @Primary
+    fun redisLiveWatchersTracker(redisTemplate: RedisTemplate<String, Any>): LiveWatchersTracker {
+        return RedisLiveWatchersTracker(redisTemplate)
     }
 }
