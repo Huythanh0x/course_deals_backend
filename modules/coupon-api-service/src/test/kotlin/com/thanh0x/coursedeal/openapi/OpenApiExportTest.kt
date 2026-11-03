@@ -109,6 +109,7 @@ class OpenApiExportTest {
             setOf(
                 "listCoupons",
                 "createCoupon",
+                "getHotDeals",
                 "deleteCoupon",
                 "refreshCoupon",
                 "updateCoupon",
