@@ -2,6 +2,9 @@ package com.thanh0x.coursedeal.exception
 
 import com.thanh0x.coursedeal.config.logger
 import com.thanh0x.coursedeal.dto.ApiErrorDTO
+import com.thanh0x.coursedeal.observability.ErrorTrackingReporter
+import com.thanh0x.coursedeal.observability.SentryErrorTrackingReporter
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
@@ -18,8 +21,12 @@ import java.util.Date
  * GlobalExceptionHandler class handles exceptions globally within the application.
  */
 @ControllerAdvice
-class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
+class GlobalExceptionHandler(
+    @Autowired(required = false)
+    errorTrackingReporter: ErrorTrackingReporter? = null,
+) : ResponseEntityExceptionHandler() {
     private val log = logger()
+    private val reporter: ErrorTrackingReporter = errorTrackingReporter ?: SentryErrorTrackingReporter()
 
     override fun handleMethodArgumentNotValid(
         ex: MethodArgumentNotValidException,
@@ -88,6 +95,16 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
         request: WebRequest,
     ): ResponseEntity<ApiErrorDTO> {
         log.error("Unexpected error: ", exception)
+        val servletRequest = (request as? ServletWebRequest)?.request
+        reporter.reportException(
+            throwable = exception,
+            tags =
+                mapOf(
+                    "service" to "coupon-api-service",
+                    "endpoint" to (servletRequest?.requestURI ?: "unknown"),
+                    "http_method" to (servletRequest?.method ?: "UNKNOWN"),
+                ),
+        )
         return createErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR,
             exception.message ?: "Internal Server Error",
@@ -106,7 +123,7 @@ class GlobalExceptionHandler : ResponseEntityExceptionHandler() {
                 status = status.value(),
                 error = status.reasonPhrase,
                 message = message,
-                path = (request as ServletWebRequest).request.requestURI,
+                path = (request as? ServletWebRequest)?.request?.requestURI ?: "",
             )
         return ResponseEntity(error, status)
     }

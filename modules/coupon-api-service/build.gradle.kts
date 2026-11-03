@@ -40,6 +40,7 @@ dependencies {
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.validation)
+    implementation(libs.sentry.spring.boot.starter.jakarta)
     implementation(libs.springdoc.openapi.webmvc.ui)
     implementation(libs.flyway.mysql)
     implementation(libs.mysql.connector.j)
