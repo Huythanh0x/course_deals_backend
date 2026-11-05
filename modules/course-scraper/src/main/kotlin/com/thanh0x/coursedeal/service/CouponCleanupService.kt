@@ -20,8 +20,9 @@ class CouponCleanupService(
     private val log = logger()
 
     /**
-     * Finds all coupons whose expiredDate is before or equal to [threshold], archives their
-     * metadata into expired_course_data, and removes them from coupon_course_data.
+     * Finds all coupons whose expiredDate is before or equal to [threshold] or that are invalid
+     * (usesRemaining <= 0 or blank couponCode), archives their metadata into expired_course_data,
+     * and removes them from coupon_course_data.
      *
      * @param threshold the expiration cutoff
      * @return the number of purged coupons
@@ -33,19 +34,25 @@ class CouponCleanupService(
     fun archiveAndPurgeExpiredCoupons(threshold: Instant): Int {
         val expiredCoupons = couponCourseRepository.findByExpiredDateLessThanEqual(threshold)
         if (expiredCoupons.isEmpty()) {
-            log.debug("No expired coupons found to purge (threshold: {})", threshold)
+            log.debug("No expired or invalid coupons found to purge (threshold: {})", threshold)
             return 0
         }
 
-        log.info("Found {} expired coupons to archive and purge", expiredCoupons.size)
+        log.info("Found {} expired or invalid coupons to archive and purge", expiredCoupons.size)
         archiveCoupons(expiredCoupons)
 
-        val urlsToDelete = expiredCoupons.mapNotNull { it.couponUrl }.toSet()
+        val urlsToDelete = expiredCoupons.mapNotNull { it.couponUrl }.filter { it.isNotBlank() }.toSet()
         if (urlsToDelete.isNotEmpty()) {
             couponCourseRepository.deleteAllCouponsByUrl(urlsToDelete)
         }
 
-        log.info("Successfully purged and archived {} expired coupons", expiredCoupons.size)
+        for (coupon in expiredCoupons) {
+            if (coupon.couponUrl.isNullOrBlank()) {
+                couponCourseRepository.deleteById(coupon.courseId)
+            }
+        }
+
+        log.info("Successfully purged and archived {} expired or invalid coupons", expiredCoupons.size)
         return expiredCoupons.size
     }
 

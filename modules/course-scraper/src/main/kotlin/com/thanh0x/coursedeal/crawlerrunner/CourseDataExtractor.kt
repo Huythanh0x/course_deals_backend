@@ -25,7 +25,7 @@ class CourseDataExtractor {
     private var couponCode: String = ""
 
     companion object {
-        private val DEFAULT_EXPIRED_DATE: Instant = Instant.parse("2030-05-19T17:24:00Z")
+        private const val FALLBACK_EXPIRY_SECONDS = 4 * 24 * 60 * 60L
         private val DISCOVER_DEEPLINK_ID_REGEX = Regex("""udemy://discover\?courseId=(\d+)""")
         private const val MIN_TIMESTAMP_LENGTH = 19
         private const val TIMEZONE_OFFSET_LENGTH = 5
@@ -120,6 +120,10 @@ class CourseDataExtractor {
      * @return CouponCourseData object containing both coupon data and course data
      */
     fun getFullCouponCodeData(): CouponCourseData? {
+        if (couponCode.isBlank()) {
+            log.debug("Skipping extraction for {}: couponCode is blank", couponUrl)
+            return null
+        }
         val couponJson = WebContentFetcher.getJsonObjectFrom(UrlUtils.getCouponAPI(courseId, couponCode))
         val courseJson = WebContentFetcher.getJsonObjectFrom(UrlUtils.getCourseAPI(courseId))
 
@@ -134,7 +138,7 @@ class CourseDataExtractor {
      * @param courseObjectJson the JSONObject containing course data
      * @return CourseJsonData object with extracted course information
      */
-    private fun extractCourseDataFromOfficialAPI(courseObjectJson: JSONObject?): CourseJsonData? {
+    internal fun extractCourseDataFromOfficialAPI(courseObjectJson: JSONObject?): CourseJsonData? {
         if (courseObjectJson == null) return null
 
         val title = courseObjectJson.optString("title", "")
@@ -174,33 +178,70 @@ class CourseDataExtractor {
      * @return CouponJsonData object with extracted data
      */
     @Suppress("ReturnCount")
-    private fun extractDataCouponFromOfficialAPI(couponJsonObject: JSONObject?): CouponJsonData? {
-        if (couponJsonObject == null || couponJsonObject.has("detail")) return null
+    internal fun extractDataCouponFromOfficialAPI(couponJsonObject: JSONObject?): CouponJsonData? {
+        if (couponCode.isBlank() || couponJsonObject == null || couponJsonObject.has("detail")) {
+            return null
+        }
 
         val pricingResultObj =
             couponJsonObject.optJSONObject("price_text")
                 ?.optJSONObject("data")
                 ?.optJSONObject("pricing_result")
+                ?: return null
 
-        val price = pricingResultObj?.optJSONObject("price")?.optFloat("amount", Float.NaN)
-
-        return if (pricingResultObj == null || price == null || java.lang.Float.isNaN(price)) {
-            null
-        } else {
-            val campaignObj = pricingResultObj.optJSONObject("campaign")
-            val usesRemaining = campaignObj?.optInt("uses_remaining", 0) ?: 0
-            if (couponCode.isNotBlank() && campaignObj == null && price != 0f) {
-                log.info("Coupon code {} is expired or has no active campaign on course {}", couponCode, courseId)
-                return null
-            }
-            if (campaignObj != null && usesRemaining <= 0) {
-                log.info("Coupon code {} on course {} has 0 uses remaining", couponCode, courseId)
-                return null
-            }
-            val expiredDate = parseExpiredDate(campaignObj?.optString("end_time", null))
-            val (previewImage, previewVideo) = extractPreviewAssets(couponJsonObject)
-            CouponJsonData(price, expiredDate, previewImage, previewVideo, usesRemaining)
+        if (!isValidPromotionalPricing(pricingResultObj)) {
+            return null
         }
+
+        val campaignObj = pricingResultObj.optJSONObject("campaign") ?: return null
+        val usesRemaining = campaignObj.optInt("uses_remaining", 0)
+        val resolvedCouponCode =
+            campaignObj.optString("code", "").takeIf { it.isNotBlank() }
+                ?: couponCode.substringBefore('&').trim()
+        this.couponCode = resolvedCouponCode
+
+        val expiredDate = parseExpiredDate(campaignObj.optString("end_time", null))
+        val (previewImage, previewVideo) = extractPreviewAssets(couponJsonObject)
+        return CouponJsonData(
+            price = 0f,
+            expiredDate = expiredDate,
+            previewImage = previewImage,
+            previewVideo = previewVideo,
+            usesRemaining = usesRemaining,
+            couponCode = resolvedCouponCode,
+        )
+    }
+
+    @Suppress("ReturnCount")
+    private fun isValidPromotionalPricing(pricingResultObj: JSONObject): Boolean {
+        val price = pricingResultObj.optJSONObject("price")?.optFloat("amount", Float.NaN)
+        if (price == null || java.lang.Float.isNaN(price) || price != 0f) {
+            return false
+        }
+
+        val campaignObj = pricingResultObj.optJSONObject("campaign")
+        val usesRemaining = campaignObj?.optInt("uses_remaining", 0) ?: 0
+        if (campaignObj == null || usesRemaining <= 0) {
+            log.info(
+                "Coupon code {} on course {} has no active campaign or 0 uses remaining",
+                couponCode,
+                courseId,
+            )
+            return false
+        }
+
+        val listPrice = pricingResultObj.optJSONObject("list_price")?.optFloat("amount", 0f) ?: 0f
+        val hasDiscountSaving = pricingResultObj.optBoolean("has_discount_saving", false)
+        if (!hasDiscountSaving || listPrice <= 0f) {
+            log.info(
+                "Course {} is Always-Free or has no discount saving (listPrice={}, hasDiscountSaving={})",
+                courseId,
+                listPrice,
+                hasDiscountSaving,
+            )
+            return false
+        }
+        return true
     }
 
     private fun extractPreviewAssets(couponJsonObject: JSONObject): Pair<String, String> {
@@ -224,8 +265,8 @@ class CourseDataExtractor {
      * @param dateStr The date string to parse
      * @return Instant representing the date in UTC
      */
-    private fun parseExpiredDate(dateStr: String?): Instant {
-        if (dateStr.isNullOrBlank()) return DEFAULT_EXPIRED_DATE
+    internal fun parseExpiredDate(dateStr: String?): Instant {
+        if (dateStr.isNullOrBlank()) return Instant.now().plusSeconds(FALLBACK_EXPIRY_SECONDS)
 
         return try {
             val trimmed = dateStr.trim()
@@ -235,8 +276,8 @@ class CourseDataExtractor {
                 else -> OffsetDateTime.parse(dateStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME).toInstant()
             }
         } catch (e: DateTimeParseException) {
-            log.debug("Failed to parse expired date string '{}', defaulting far future", dateStr, e)
-            DEFAULT_EXPIRED_DATE
+            log.debug("Failed to parse expired date string '{}', defaulting to 4-day fallback", dateStr, e)
+            Instant.now().plusSeconds(FALLBACK_EXPIRY_SECONDS)
         }
     }
 
@@ -261,11 +302,14 @@ class CourseDataExtractor {
      * @param courseData The CourseJsonData object containing course information
      * @return A new CouponCourseData object with combined data from course and coupon
      */
-    private fun combineCourseAndCouponData(
+    @Suppress("ReturnCount")
+    internal fun combineCourseAndCouponData(
         couponData: CouponJsonData?,
         courseData: CourseJsonData?,
     ): CouponCourseData? {
         if (couponData == null || courseData == null || couponData.price != 0f) return null
+        val effectiveCouponCode = couponData.couponCode?.takeIf { it.isNotBlank() } ?: couponCode
+        if (effectiveCouponCode.isBlank() || couponData.usesRemaining <= 0) return null
         return CouponCourseData(
             courseId = courseId,
             category = courseData.category,
@@ -277,7 +321,7 @@ class CourseDataExtractor {
             rating = courseData.rating,
             reviews = courseData.numberReviews,
             students = courseData.students,
-            couponCode = couponCode,
+            couponCode = effectiveCouponCode,
             previewImage = couponData.previewImage,
             couponUrl = couponUrl,
             expiredDate = couponData.expiredDate,

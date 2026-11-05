@@ -8,4 +8,5 @@ data class CouponJsonData(
     var previewImage: String? = null,
     var previewVideo: String? = null,
     var usesRemaining: Int = 0,
+    var couponCode: String? = null,
 )
