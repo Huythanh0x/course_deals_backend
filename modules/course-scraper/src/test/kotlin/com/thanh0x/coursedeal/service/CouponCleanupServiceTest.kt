@@ -99,4 +99,40 @@ class CouponCleanupServiceTest {
 
         verify(expiredCouponRepository, times(1)).updateUpdatedAtForUrls(setOf("https://example.com/existing"))
     }
+
+    @Test
+    fun `archiveAndPurgeExpiredCoupons purges invalid Always-Free rows including missing couponUrl`() {
+        val now = Instant.now()
+        val alwaysFreeWithUrl =
+            CouponCourseData(
+                courseId = 4202336,
+                title = "Object Oriented Programming in C++",
+                couponUrl = "https://www.udemy.com/course/oop-cpp/",
+                couponCode = "",
+                usesRemaining = 0,
+                expiredDate = Instant.parse("2030-05-19T17:24:00Z"),
+            )
+        val invalidWithoutUrl =
+            CouponCourseData(
+                courseId = 4202337,
+                title = "Broken Entry Without URL",
+                couponUrl = null,
+                couponCode = null,
+                usesRemaining = 0,
+                expiredDate = Instant.parse("2030-05-19T17:24:00Z"),
+            )
+
+        `when`(couponCourseRepository.findByExpiredDateLessThanEqual(now)).thenReturn(
+            listOf(alwaysFreeWithUrl, invalidWithoutUrl),
+        )
+        `when`(expiredCouponRepository.findAllCouponUrls()).thenReturn(emptySet())
+
+        val count = service.archiveAndPurgeExpiredCoupons(now)
+
+        assertEquals(2, count)
+        verify(couponCourseRepository, times(1)).deleteAllCouponsByUrl(
+            setOf("https://www.udemy.com/course/oop-cpp/"),
+        )
+        verify(couponCourseRepository, times(1)).deleteById(4202337)
+    }
 }

@@ -18,7 +18,10 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
     @Query(
         """
         SELECT c FROM CouponCourseData c WHERE 
-        (c.expiredDate IS NULL OR c.expiredDate > :now)
+        (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.usesRemaining > 0 AND 
+        c.couponCode IS NOT NULL AND 
+        c.couponCode <> ''
         """,
     )
     fun findAllActive(
@@ -30,6 +33,9 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
         """
         SELECT c FROM CouponCourseData c WHERE 
         (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.usesRemaining > 0 AND 
+        c.couponCode IS NOT NULL AND 
+        c.couponCode <> '' AND 
         c.rating >= :minRating 
         ORDER BY c.students DESC
         """,
@@ -44,6 +50,9 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
         """
         SELECT c FROM CouponCourseData c WHERE 
         (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.usesRemaining > 0 AND 
+        c.couponCode IS NOT NULL AND 
+        c.couponCode <> '' AND 
         c.rating >= :minRating AND (
             LOWER(c.category) LIKE LOWER(CONCAT('%', :preference, '%')) OR 
             LOWER(c.title) LIKE LOWER(CONCAT('%', :preference, '%'))
@@ -61,7 +70,10 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
     @Query(
         """
         SELECT c FROM CouponCourseData c WHERE 
-        (c.expiredDate IS NULL OR c.expiredDate > :now) AND (
+        (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.usesRemaining > 0 AND 
+        c.couponCode IS NOT NULL AND 
+        c.couponCode <> '' AND (
             LOWER(c.title) LIKE LOWER(CONCAT('%', :query, '%')) OR 
             LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%')) OR 
             LOWER(c.heading) LIKE LOWER(CONCAT('%', :query, '%'))
@@ -78,6 +90,9 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
         """
         SELECT c FROM CouponCourseData c WHERE 
         (c.expiredDate IS NULL OR c.expiredDate > :now) AND 
+        c.usesRemaining > 0 AND 
+        c.couponCode IS NOT NULL AND 
+        c.couponCode <> '' AND 
         c.rating > :rating AND 
         c.contentLength > :contentLength AND 
         c.level LIKE %:level% AND 
@@ -96,7 +111,18 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
         pageable: Pageable,
     ): Page<CouponCourseData>
 
-    fun findByExpiredDateLessThanEqual(expirationThreshold: Instant): List<CouponCourseData>
+    @Query(
+        """
+        SELECT c FROM CouponCourseData c
+        WHERE c.expiredDate <= :threshold
+           OR c.usesRemaining <= 0
+           OR c.couponCode IS NULL
+           OR c.couponCode = ''
+        """,
+    )
+    fun findByExpiredDateLessThanEqual(
+        @Param("threshold") expirationThreshold: Instant,
+    ): List<CouponCourseData>
 
     fun findByCourseId(courseId: Int): CouponCourseData?
 
