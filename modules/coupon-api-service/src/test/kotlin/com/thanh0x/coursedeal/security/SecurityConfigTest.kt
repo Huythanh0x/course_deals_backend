@@ -32,6 +32,20 @@ class SecurityConfigTest {
     }
 
     @Test
+    fun `GET public web home and partials are public`() {
+        mockMvc.perform(get("/"))
+            .andExpect(status().isOk)
+        mockMvc.perform(get("/coupons"))
+            .andExpect(status().isOk)
+        mockMvc.perform(get("/partials/coupons"))
+            .andExpect(status().isOk)
+        mockMvc.perform(get("/terms"))
+            .andExpect(status().isOk)
+        mockMvc.perform(get("/privacy"))
+            .andExpect(status().isOk)
+    }
+
+    @Test
     fun `GET app config is public`() {
         mockMvc.perform(get("/api/v1/app/config"))
             .andExpect(status().isOk)

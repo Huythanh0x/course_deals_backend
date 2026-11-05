@@ -50,6 +50,21 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/actuator/**").permitAll()
                     .requestMatchers("/error").permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/",
+                        "/coupons",
+                        "/partials/**",
+                        "/courses/**",
+                        "/terms",
+                        "/privacy",
+                        "/app",
+                        "/app/**",
+                        "/static/**",
+                        "/favicon.ico",
+                        "/robots.txt",
+                        "/sitemap.xml",
+                    ).permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/app/config").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/coupons/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/courses/*/reports").permitAll()
@@ -75,7 +90,12 @@ class SecurityConfig(private val tokenAuthenticationFilter: TokenAuthenticationF
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("https://coupons.thanh0x.com")
+        configuration.allowedOrigins =
+            listOf(
+                "https://coupons.thanh0x.com",
+                "https://coupons-api.thanh0x.com",
+                "http://localhost:8080",
+            )
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true

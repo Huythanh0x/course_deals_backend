@@ -95,9 +95,9 @@ interface CouponCourseRepository : JpaRepository<CouponCourseData, Int> {
         c.couponCode <> '' AND 
         c.rating > :rating AND 
         c.contentLength > :contentLength AND 
-        c.level LIKE %:level% AND 
-        LOWER(c.category) LIKE LOWER(CONCAT('%', :category, '%')) AND 
-        c.language LIKE %:language%
+        (:level = '' OR CAST(c.level AS string) LIKE CONCAT('%', :level, '%')) AND 
+        (:category = '' OR LOWER(c.category) LIKE LOWER(CONCAT('%', :category, '%'))) AND 
+        (:language = '' OR LOWER(c.language) LIKE LOWER(CONCAT('%', :language, '%')))
         """,
     )
     @Suppress("LongParameterList")
